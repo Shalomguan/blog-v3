@@ -142,6 +142,7 @@ export default defineNuxtConfig({
 	},
 
 	content: {
+		
 		build: {
 			markdown: {
 				highlight: false,

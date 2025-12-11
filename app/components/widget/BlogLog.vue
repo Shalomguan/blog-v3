@@ -3,11 +3,9 @@ const appConfig = useAppConfig()
 const timeEstablished = appConfig.timeEstablished
 
 const blogLog = [
-	{ label: '2025-07-26', value: '重构到 Nuxt 4 + Nuxt Content v3，启用 zhilu.site 域名' },
-	{ label: '2024-08-11', value: '重构到 Nuxt 3 + Nuxt Content v2' },
-	{ label: '2023-05-24', value: '更换框架为 Hexo，升级博客' },
-	{ label: '2020-08-24', value: '使用 zhilu.cyou 域名' },
-	{ label: timeEstablished, value: '发布第一篇文章' },
+	{ label: '2025-12-05', value: '重启博客，数据丢失了，换用Clarity' },
+	{ label: '2025-4-05', value: '服务器到期，经济原因无法继续维护博客' },
+	{ label: timeEstablished, value: '建立博客' },
 ]
 </script>
 
