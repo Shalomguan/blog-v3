@@ -1,10 +1,10 @@
 import type { FeedEntry } from './app/types/feed'
 
 const basicConfig = {
-	title: '博客',
+	title: 'Wa的小家',
 	subtitle: "Wa's Blog",
 	// 长 description 利好于 SEO
-	description: '博客',
+	description: '技术文章，经验分享，生活杂谈，代码笔记，Wa 的个人博客。',
 	author: {
 		name: 'Wa',
 		avatar: '/pictures/frog.jpg',
