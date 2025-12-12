@@ -104,6 +104,7 @@ export default defineAppConfig({
 			title: '',
 			items: [
 				{ icon: 'ph:files-bold', text: '文章', url: '/' },
+				{ icon: 'ph:chats-bold', text: '说说', url: '/essays' },
 				{ icon: 'ph:link-bold', text: '友链', url: '/link' },
 				// { icon: 'ph:tag-bold', text: '标签', url: '/tags' },
 				{ icon: 'ph:archive-bold', text: '归档', url: '/archive' },

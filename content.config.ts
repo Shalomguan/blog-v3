@@ -30,10 +30,29 @@ const articleSchema = z.object({
 	}),
 })
 
+const talkSchema = z.object({
+	text: z.string().optional(),
+	date: z.string(),
+	images: z.array(z.string()).optional(),
+	video: z.object({
+		type: z.enum(['raw', 'bilibili', 'bilibili-nano', 'youtube', 'douyin', 'douyin-wide', 'tiktok']).optional(),
+		id: z.string(),
+		ratio: z.union([z.string(), z.number()]).optional(),
+		poster: z.string().optional(),
+	}).optional(),
+	tags: z.array(z.string()).optional(),
+	location: z.string().optional(),
+})
+
 export const collections = {
 	content: defineCollection(asSitemapCollection({
 		source: '**',
 		type: 'page',
 		schema: articleSchema,
 	})),
+	talks: defineCollection({
+		type: 'data',
+		source: 'talks',
+		schema: talkSchema,
+	}),
 }
