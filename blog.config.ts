@@ -7,7 +7,7 @@ const basicConfig = {
 	description: '技术文章，经验分享，生活杂谈，代码笔记，Wa 的个人博客。',
 	author: {
 		name: 'Wa',
-		avatar: '/pictures/frog.jpg',
+		avatar: 'https://pic.gslpro.top/tx.jpg',
 		email: 'qutypebeat@gmail.com',
 		homepage: 'https://blog.gslpro.top/',
 	},
@@ -16,7 +16,7 @@ const basicConfig = {
 		name: '署名-非商业性使用-相同方式共享 4.0 国际',
 		url: 'https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans',
 	},
-	favicon: '/pictures/frog.jpg',
+	favicon: 'https://pic.gslpro.top/tx.jpg',
 	language: 'zh-CN',
 	timeEstablished: '2024-10-1',
 	timezone: 'Asia/Shanghai',

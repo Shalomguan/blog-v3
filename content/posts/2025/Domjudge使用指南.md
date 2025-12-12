@@ -285,4 +285,6 @@ if __name__ == "__main__":
 
 ```
 
-脚本的具体内容根据年份更改，之后在domjudge的**import**和**export**选项这里进入，之后导入就行了
+脚本的具体内容根据年份更改，会生成accounts,teams,和groups三个文件之后在domjudge的**import**和**export**选项这里进入，导入就行了
+
+## 题目导入
