@@ -1,6 +1,7 @@
 ---
 title: DOMJUDGE食用指南
 date: 2025-12-11 23:30:20
+updated: 2025-12-12 14:37:42
 categories: [acm]
 ---
 ## 导入名单
