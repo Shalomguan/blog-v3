@@ -76,10 +76,10 @@ const blogConfig = {
 		{ src: 'https://lib.baomitu.com/twikoo/1.6.44/twikoo.min.js', defer: true },
 	],
 
-	/** 自己部署的 Twikoo 服务 */
+	/** 自己部署的 Twikoo 服务 */	
 	twikoo: {
-		envId: 'https://twikoo.example.cyou/',
-		preload: 'https://twikoo.example.cyou/',
+		envId: 'https://twikoo-navy-one.vercel.app/',
+		preload: 'https://twikoo-navy-one.vercel.app/',
 	},
 }
 
