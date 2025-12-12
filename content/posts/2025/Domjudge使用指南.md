@@ -471,9 +471,23 @@ if __name__ == "__main__":
 
 这里看了别人的文档，大致知道我们的domjudge版本下是访问
 
-**域名/domjudge/api/v4/contests/{contest_id}/event-feed/?stream=false**输入管理员账户的账号密码，获得event-feed再改后缀即可,后续我还没有开始实操，晚点写
+**域名/domjudge/api/v4/contests/{contest_id}/event-feed/?stream=false**输入管理员账户的账号密码，获得event-feed再改后缀即可
 
+接下来resolver文件夹里新建一个文件夹叫做CDP,把先前的event-feed.json放进去，之后点击award.bat进行一个初始化，初始化你想要设置的奖项，然后在当前文件夹打开powershel输入
+```bash
+.\resolver.bat CDP
+```
+就可以运行了
+可能存在的问题有：**中文名字全部变成框框了**，要解决这个问题的话，你得在
+**resolver.bat**文件夹的开头加入两行代码
+echo off为自带的，无需理会
+```bat
+@echo off 
+set "ICPC_FONT=Microsoft YaHei"
+set "ICPC_FONT_NAME=Microsoft YaHei"
+```
 
+哦对了，如果这两个bat打不开，大概率是因为没有java环境，这里我就不赘述怎么配置环境了，自己上网搜索即可
 
 
 ## 后记
