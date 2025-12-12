@@ -288,3 +288,35 @@ if __name__ == "__main__":
 脚本的具体内容根据年份更改，会生成accounts,teams,和groups三个文件之后在domjudge的**import**和**export**选项这里进入，导入就行了
 
 ## 题目导入
+题目的导入算不得麻烦，就是会有一点小坑，主要还是打包格式的问题
+这里是spj的打包格式
+```
+.
+├── data
+│   ├── sample
+│   └── secret
+├── output_validators
+│   └── validate
+│       ├── checker.cpp
+│       └── testlib.h
+├── submissions
+│   ├── accepted
+├── domjudge-problem.ini
+├── problem.pdf
+
+```
+这是普通题目的打包格式
+```
+.
+├── data
+│   ├── sample
+│   └── secret
+├── submissions
+│   ├── accepted
+├── domjudge-problem.ini
+├── problem.pdf
+
+```
+建议pdf统一都用markdown导出，在出题之前写好一个<mark>markdown的模板</mark>，让他们在此模板进行修改，以防题目格式百花齐放（
+
+**最要注意的来了**
