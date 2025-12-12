@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import talks from '~/talks'
 import { toDate } from 'date-fns-tz'
+import type { TalkItem } from '~/types/talk'
 
 const layoutStore = useLayoutStore()
 layoutStore.setAside(['blog-stats', 'blog-tech', 'blog-log', 'comm-group'])
@@ -10,13 +10,39 @@ const description = '记录生活点滴，一些想法。'
 const image = 'https://bu.dusays.com/2025/02/18/67b46c6d999ea.webp'
 useSeoMeta({ title, description, ogImage: image })
 
+const { data: talks } = await useAsyncData('talks', () =>
+  queryContent<TalkItem>('talks')
+    .where({ draft: { $ne: true } })
+    .sort({ date: -1 })
+    .find(),
+)
+
+const recentTalks = computed(() => (talks.value ?? []).slice(0, 30))
+
 const { author } = useAppConfig()
 
-const recentTalks = [...talks]
-  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  .slice(0, 30)
+function extractTextFromBody(node: any): string {
+  if (!node) return ''
+  if (typeof node.value === 'string') {
+    return node.value
+  }
 
-function replyTalk(content: string): void {
+  if (Array.isArray(node.children)) {
+    const separator = node.type === 'root' ? '\n' : ''
+    return node.children.map(extractTextFromBody).join(separator)
+  }
+
+  return ''
+}
+
+function getTalkContent(talk: TalkItem): string {
+  if (talk.text) return talk.text
+  if (talk.body) return extractTextFromBody(talk.body)
+  return ''
+}
+
+function replyTalk(talk: TalkItem): void {
+  const content = getTalkContent(talk)
   const input = document.querySelector('#twikoo .tk-input textarea')
   if (!(input instanceof HTMLTextAreaElement)) return
 
@@ -55,7 +81,7 @@ function getEssayDate(date?: string | Date) {
 <ZPageBanner :title :description :image />
 
 <div class="talk-list">
-  <div class="talk-item" v-for="talk in recentTalks" :key="talk.date">
+  <div class="talk-item" v-for="talk in recentTalks" :key="talk._id || talk.date">
     <div class="talk-meta">
       <NuxtImg class="avatar" :src="author.avatar" :alt="author.name" />
       <div class="info">
@@ -68,7 +94,8 @@ function getEssayDate(date?: string | Date) {
     </div>
 
     <div class="talk-content">
-      <div class="text" v-if="talk.text" v-html="talk.text"></div>
+      <ContentRendererMarkdown class="text" v-if="talk.body" :value="talk" />
+      <div class="text" v-else-if="talk.text" v-html="talk.text"></div>
       <div class="images" v-if="talk.images">
         <Pic class="image" v-for="image in talk.images" :src="image" />
       </div>
@@ -77,21 +104,21 @@ function getEssayDate(date?: string | Date) {
 
     <div class="talk-bottom">
       <div class="tags">
-        <span class="tag" v-for="tag in talk.tags">
+        <span class="tag" v-for="tag in talk.tags || []">
           <Icon name="ph:tag-bold" />
           <span>{{ tag }}</span>
         </span>
-        <ZRawLink
-          class="location"
-          v-if="talk.location"
-          v-tip="`搜索: ${talk.location}`"
-          :to="`https://bing.com/maps?q=${encodeURIComponent(talk.location)}`"
-        >
-          <Icon name="ph:map-pin-bold" />
-          <span>{{ talk.location }}</span>
-        </ZRawLink>
       </div>
-      <button class="comment-btn" v-tip="'评论'" @click="replyTalk(talk.text)">
+      <ZRawLink
+        class="location"
+        v-if="talk.location"
+        v-tip="`搜索: ${talk.location}`"
+        :to="`https://bing.com/maps?q=${encodeURIComponent(talk.location)}`"
+      >
+        <Icon name="ph:map-pin-bold" />
+        <span>{{ talk.location }}</span>
+      </ZRawLink>
+      <button class="comment-btn" v-tip="'评论'" @click="replyTalk(talk)">
         <Icon name="ph:chats-bold" />
       </button>
     </div>

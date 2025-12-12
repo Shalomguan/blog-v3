@@ -1,4 +1,7 @@
-export type TalkItem = {  
+export type TalkItem = {
+  _id?: string
+  _path?: string
+  body?: unknown
   text?: string
   date: string
   images?: string[]
@@ -10,4 +13,5 @@ export type TalkItem = {
   }
   tags?: string[]
   location?: string
+  draft?: boolean
 }
