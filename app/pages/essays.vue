@@ -7,7 +7,7 @@ layoutStore.setAside(['blog-stats', 'blog-tech', 'blog-log', 'comm-group'])
 
 const title = '说说'
 const description = '记录生活点滴，一些想法。'
-const image = 'https://bu.dusays.com/2025/02/18/67b46c6d999ea.webp'
+const image = 'https://pic.gslpro.top/redhat.jpg'
 useSeoMeta({ title, description, ogImage: image })
 
 const { author } = useAppConfig()
@@ -91,7 +91,7 @@ function getEssayDate(date?: string | Date) {
           <span>{{ talk.location }}</span>
         </ZRawLink>
       </div>
-      <button class="comment-btn" v-tip="'评论'" @click="replyTalk(talk.text)">
+      <button class="comment-btn" v-tip="'评论'" @click="replyTalk(talk.text || '')">
         <Icon name="ph:chats-bold" />
       </button>
     </div>

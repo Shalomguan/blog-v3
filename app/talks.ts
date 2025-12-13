@@ -42,4 +42,4 @@ export default [
   //   tags: ['旅行'],
   //   location: '成都'
   // }
-] satisfies TalkItem[]
+] as TalkItem[]

@@ -65,7 +65,7 @@ export default defineAppConfig({
 			{
 				title: '社交',
 				items: [
-					{ icon: 'ph:github-logo-bold', text: 'Shalomguan', url: 'https://github.com/octocat' },
+					{ icon: 'ph:github-logo-bold', text: 'Shalomguan', url: 'https://github.com/Shalomguan' },
 					{ icon: 'ri:qq-line', text: 'QQ: 202979538', url: 'https://jq.qq.com/?_wv=1027&k=lQfNSeEd' },
 					{ icon: 'ph:envelope-simple-bold', text: blogConfig.author.email, url: `mailto:${blogConfig.author.email}` },
 				],
