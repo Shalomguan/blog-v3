@@ -5,16 +5,16 @@ import { toDate } from 'date-fns-tz'
 const layoutStore = useLayoutStore()
 layoutStore.setAside(['blog-stats', 'blog-tech', 'blog-log', 'comm-group'])
 
-// const title = '说说'
+const title = '说说'
 // const description = '记录生活点滴，一些想法。'
 // const image = 'https://pic.gslpro.top/redhat.jpg'
-// useSeoMeta({
-//   title,
-//   description,
-//   ogTitle: title,
-//   ogDescription: description,
-//   ogImage: image,
-// }) 怎么没用
+useSeoMeta({
+  title,
+  // description,
+  ogTitle: title,
+  // ogDescription: description,
+  // ogImage: image,
+}) //怎么没用
 
 const { author } = useAppConfig()
 
