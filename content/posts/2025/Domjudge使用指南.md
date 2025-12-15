@@ -8,62 +8,113 @@ tags: [教程]
 ---
 ## 导入名单
 
-首先我想要说的就是这个名单的导入，这个算是最简单的了，基本不会有坑，不过考虑到有人可能觉得写脚本麻烦，我在下面贴一个脚本
+首先我想要说的就是这个名单的导入，这个算是最简单的了，基本不会有坑，不过考虑到有人可能觉得写脚本麻烦，我在下面贴一个脚本,这一份代码还有需要修改
 ```py
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
-从“2025年菜鸟杯报名信息收集表（收集结果）.xlsx”生成：
-  - groups.tsv
-  - teams.tsv
-  - accounts.tsv（DOMjudge 账户）
+CNB DOMjudge 工具（整合版）
 
-使用方式示例（PowerShell）：
-    python gen_cnb_domjudge.py `
-        --input "2025年菜鸟杯报名信息收集表（收集结果）.xlsx" `
-        --outdir "out"
+功能概览
+1) gen：从报名 Excel 生成 DOMjudge 导入用 TSV + 滚榜昵称映射
+   - groups.tsv
+   - teams.tsv       （DOMjudge 榜单显示：真名）
+   - accounts.tsv
+   - nicknames.tsv   （滚榜显示：昵称映射 teamid -> nickname）
 
-依赖：
-    pip install pandas openpyxl
+2) patch：对 DOMjudge event-feed（NDJSON，每行一个 JSON 对象）替换队伍显示名
+   - 输入：event-feed.json（NDJSON）
+   - 输出：event-feed.nick.json（NDJSON）
+   - 只替换 type == "teams" 的事件：data.name = nicknames.tsv 中的 nickname
+
+===========================================================
+依赖
+  pip install pandas openpyxl
+
+-----------------------------------------------------------
+Windows (PowerShell) 推荐运行方式
+  1) 生成 TSV：
+     python .\cnb_domjudge_tool.py gen `
+       --input "2025年菜鸟杯报名信息收集表（收集结果）.xlsx" `
+       --outdir out `
+       --year 2025
+
+  2) 替换 event-feed 里的队伍名为昵称（用于 resolver 滚榜）：
+     python .\cnb_domjudge_tool.py patch `
+       --nick out\nicknames.tsv `
+       --in event-feed.json `
+       --out event-feed.nick.json
+
+  注意：
+  - PowerShell 分行必须用反引号 ` 续行；或者写在一行也可以。
+  - 参数必须是两个短横线：--nick 不是 “—nick”（长横线会报错）。
+
+-----------------------------------------------------------
+Arch / Linux (bash) 推荐运行方式
+  1) 建议虚拟环境：
+     python -m venv .venv
+     source .venv/bin/activate
+     pip install -U pip
+     pip install pandas openpyxl
+
+  2) 生成 TSV：
+     python cnb_domjudge_tool.py gen \
+       --input "2025年菜鸟杯报名信息收集表（收集结果）.xlsx" \
+       --outdir out \
+       --year 2025
+
+  3) 替换 event-feed：
+     python cnb_domjudge_tool.py patch \
+       --nick out/nicknames.tsv \
+       --in event-feed.json \
+       --out event-feed.nick.json
+
+===========================================================
+你要的业务规则（已实现）
+- teams.tsv 的队伍名（DOMjudge 显示名）= “姓名（必填）”
+- 滚榜时显示昵称：通过 nicknames.tsv + patch event-feed 实现
+  （DOMjudge 内仍显示真名，不受影响）
 """
 
 import argparse
 import os
 import secrets
-from typing import List, Tuple
+import json
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 
-# ===== 可根据需要修改的常量 =====
 
-# 默认比赛年份，用于生成 teamid: <year> + 三位序号，例如 2025001
-CONTEST_YEAR = XXXX
-# 学号前四位在这个集合里的视为“2025-2026 Freshman”
-FRESHMAN_YEARS = {XXXX, XXXX}
-# groups.tsv 中基础组别
+# ===================== 可根据需要修改的常量 =====================
+
+CONTEST_YEAR = 2025
+
+# 学号前四位在这个集合里的视为 Freshman
+FRESHMAN_YEARS = {2025, 2026}
+
+# groups.tsv 基础组别（可按需保留/修改）
 GROUPS_BASE = [
     (2, "Self-Registered"),
     (3, "Participants"),
     (4, "Observers"),
 ]
 
-# 今年 CNB 用到的两个 group ID
-FRESHMAN_GROUP_ID = XX
-FRESHMAN_GROUP_NAME = "XXXX-XXXX Freshman"
+FRESHMAN_GROUP_ID = 10
+FRESHMAN_GROUP_NAME = "2025-2026 Freshman"
 
 SENIOR_GROUP_ID = 11
-SENIOR_GROUP_NAME = "XXXX-XXXX Senior Player"
+SENIOR_GROUP_NAME = "2025-2026 Senior Player"
 
-# 学校信息（teams.tsv 中使用）
 AFFILIATION_NAME = "Wuhan University of Science and Technology"
 AFFILIATION_SHORT = "WUST"
 COUNTRY_CODE = "CHN"
 
-# teams.tsv 最后一列“extra”的值（参照你往年的文件）
+# teams.tsv 最后一列 extra（按你往年习惯）
 EXTRA_FIELD_VALUE = "2"
 
-# ===== 报名表列名（此处根据EXCEL表头创建） =====
+
+# ===================== 报名表列名（必须和 Excel 表头完全一致） =====================
 
 COL_NAME_REALNAME = "姓名（必填）"
 COL_NAME_STUID = "学号（必填）"
@@ -71,219 +122,266 @@ COL_NAME_NICKNAME = (
     "希望展示在榜单上昵称（昵称不允许涉及敏感信息，只能使用汉子和ASCII字符，条件允许我们会使用昵称为大家滚榜）（必填）"
 )
 
+
+# ===================== 工具函数 =====================
+
 def classify_group(student_id: str) -> int:
-    """
-    按学号前四位（入学年份）判断组别：
-    - 如果是 2025 就是 2025-2026 Freshman
-    - 其余全部 → 2025-2026 Senior Player
-    """
+    """按学号前四位判断组别。"""
     if not student_id:
         return SENIOR_GROUP_ID
-
     s = str(student_id).strip()
     if len(s) < 4:
         return SENIOR_GROUP_ID
-
     try:
         year = int(s[:4])
     except ValueError:
         return SENIOR_GROUP_ID
-
-    if year in FRESHMAN_YEARS:
-        return FRESHMAN_GROUP_ID
-    return SENIOR_GROUP_ID
+    return FRESHMAN_GROUP_ID if year in FRESHMAN_YEARS else SENIOR_GROUP_ID
 
 
-def sanitize_display_name(name: str, max_len: int = 64) -> str:
+def sanitize_text(s: Any, max_len: int = 64) -> str:
     """
-    清洗榜单展示名：
-      - 去掉换行、制表符等控制字符；
-      - 限制最大长度，避免 MySQL “Data too long for column 'name'”。
+    清洗文本：
+    - 去掉换行/制表符等控制字符
+    - 去首尾空白
+    - 限长（避免 DOMjudge/MySQL 的 name 字段过长）
     """
-    if not name:
+    if s is None:
         return ""
-
-    # 转成字符串，去掉控制字符
-    name = str(name)
+    s = str(s)
     for ch in ("\r", "\n", "\t"):
-        name = name.replace(ch, " ")
-    name = name.strip()
-
-    # 限制最大长度
-    if len(name) > max_len:
-        name = name[:max_len]
-        # 如需省略号可以改为：
-        # name = name[:max_len - 1] + "…"
-
-    return name
+        s = s.replace(ch, " ")
+    s = s.strip()
+    if len(s) > max_len:
+        s = s[:max_len]
+    return s
 
 
 def load_registration(input_path: str) -> pd.DataFrame:
-    """读取报名表并做简单清洗。"""
+    """读取报名表并做基础清洗：去空、按学号去重、排序。"""
     df = pd.read_excel(input_path)
 
-    # 只保留有姓名和学号的行
+    # 只保留有姓名和学号
     df = df.dropna(subset=[COL_NAME_REALNAME, COL_NAME_STUID])
 
     # 按学号去重（保留第一条）
     df = df.drop_duplicates(subset=[COL_NAME_STUID])
 
-    # 按学号排序，生成 teamid 时更稳定
-    df = df.sort_values(by=[COL_NAME_STUID])
-    df = df.reset_index(drop=True)
+    # 按学号排序，teamid 稳定
+    df = df.sort_values(by=[COL_NAME_STUID]).reset_index(drop=True)
     return df
 
 
 def build_groups_rows() -> List[Tuple[int, str]]:
-    """构造今年 groups.tsv 的所有行（不包含头）。"""
     rows = list(GROUPS_BASE)
     rows.append((FRESHMAN_GROUP_ID, FRESHMAN_GROUP_NAME))
     rows.append((SENIOR_GROUP_ID, SENIOR_GROUP_NAME))
     return rows
 
 
-def build_teams_and_accounts(df: pd.DataFrame, contest_year: int):
+def build_teams_accounts_nicks(df: pd.DataFrame, contest_year: int):
     """
-    从报名表构造：
-      - teams.tsv 的数据行
-      - accounts.tsv 的数据行
-    不包含头部行。
+    从报名表生成：
+      - teams.tsv 行：DOMjudge 队伍名 = 真名
+      - accounts.tsv 行
+      - nicknames.tsv 行：teamid -> nickname（滚榜用）
     """
-    teams_rows = []
-    accounts_rows = []
+    teams_rows: List[List[str]] = []
+    accounts_rows: List[List[str]] = []
+    nick_rows: List[List[str]] = []
 
     for idx, row in df.iterrows():
-        # ===== 生成队伍编号 =====
-        seq = idx + 1              # 从 1 开始编号
-        teamid = f"{contest_year}{seq:03d}"  # 例如 2025001
-        team_short_name = f"CNB{teamid}"     # 简短队名，用在 externalid
+        seq = idx + 1
+        teamid = f"{contest_year}{seq:03d}"     # e.g. 2025001
+        externalid = f"CNB{teamid}"             # e.g. CNB2025001
 
-        # ===== 基本信息 =====
-        realname = str(row[COL_NAME_REALNAME]).strip()
-        student_id = str(row[COL_NAME_STUID]).strip()
+        realname = sanitize_text(row[COL_NAME_REALNAME], max_len=64)
+        student_id = sanitize_text(row[COL_NAME_STUID], max_len=64)
+        nickname = sanitize_text(row.get(COL_NAME_NICKNAME, ""), max_len=64)
 
-        # 昵称列（希望展示在榜单上的名字）
-        nickname = row.get(COL_NAME_NICKNAME, "")
-        if nickname is None:
-            nickname = ""
-        nickname = str(nickname).strip()
-
-        # 为空或 NaN 时退回真实姓名
+        # 昵称为空时回退真名（避免滚榜映射为空导致 name 变空）
+        # 如果你坚持“昵称必填不允许回退”，改成 raise ValueError(...) 即可
         if not nickname or nickname.lower() == "nan":
-            display_name = realname
-        else:
-            display_name = nickname
+            nickname = realname
 
-        # 清洗 & 限长，防止导入 DOMjudge 时 name 字段过长
-        display_name = sanitize_display_name(display_name, max_len=64)
-
-        # ===== 组别 =====
         groupid = classify_group(student_id)
 
-        # ===== 组装 teams.tsv 行 =====
-        # 格式：teamid  externalid  groupid  name  affiliation_name
-        #       affiliation_short  country  extra
+        # teams.tsv：name = 真名（DOMjudge 榜单/队伍名显示真名）
         teams_rows.append([
             teamid,
-            team_short_name,
+            externalid,
             str(groupid),
-            display_name,          # 榜单上显示的队名：昵称/真实姓名
+            realname,  # 关键：DOMjudge 显示真名
             AFFILIATION_NAME,
             AFFILIATION_SHORT,
             COUNTRY_CODE,
             EXTRA_FIELD_VALUE,
         ])
 
-        # ===== 组装 accounts.tsv 行 =====
-        # DOMjudge accounts.tsv：type  fullname  username  password
-        # 这里按你的需求：fullname = 真实姓名（user.name 用真实姓名）
+        # accounts.tsv
         username = f"team{teamid}"
-        password = secrets.token_urlsafe(8)  # 约 11 字符随机密码
-
+        password = secrets.token_urlsafe(8)
         accounts_rows.append([
             "team",
-            realname,   # user 的 name 字段：真实姓名
+            realname,
             username,
             password,
         ])
 
-    return teams_rows, accounts_rows
+        # nicknames.tsv：滚榜显示昵称用
+        nick_rows.append([
+            teamid,
+            nickname,
+        ])
+
+    return teams_rows, accounts_rows, nick_rows
 
 
-def write_groups_tsv(output_path: str):
-    """写 groups.tsv，头一行须为 'groups\\t1'。"""
+def write_groups_tsv(path: str):
     rows = build_groups_rows()
-    with open(output_path, "w", encoding="utf-8", newline="") as f:
+    with open(path, "w", encoding="utf-8", newline="") as f:
         f.write("groups\t1\n")
         for gid, name in rows:
             f.write(f"{gid}\t{name}\n")
 
 
-def write_teams_tsv(output_path: str, teams_rows):
-    """写 teams.tsv，头一行为 'teams\\t1'。"""
-    with open(output_path, "w", encoding="utf-8", newline="") as f:
+def write_teams_tsv(path: str, teams_rows: List[List[str]]):
+    with open(path, "w", encoding="utf-8", newline="") as f:
         f.write("teams\t1\n")
         for cols in teams_rows:
             f.write("\t".join(map(str, cols)) + "\n")
 
 
-def write_accounts_tsv(output_path: str, accounts_rows):
-    """写 accounts.tsv，符合 DOMjudge 文档格式。"""
-    with open(output_path, "w", encoding="utf-8", newline="") as f:
+def write_accounts_tsv(path: str, accounts_rows: List[List[str]]):
+    with open(path, "w", encoding="utf-8", newline="") as f:
         f.write("accounts\t1\n")
         for cols in accounts_rows:
             f.write("\t".join(map(str, cols)) + "\n")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="从菜鸟杯报名表生成 DOMjudge 的 groups.tsv / teams.tsv / accounts.tsv"
-    )
-    parser.add_argument(
-        "--input",
-        required=True,
-        help="报名信息 Excel 文件路径，例如：2025年菜鸟杯报名信息收集表（收集结果）.xlsx",
-    )
-    parser.add_argument(
-        "--outdir",
-        default=".",
-        help="输出目录（默认当前目录）",
-    )
-    parser.add_argument(
-        "--year",
-        type=int,
-        default=CONTEST_YEAR,
-        help=f"比赛年份，用于生成 teamid（默认 {CONTEST_YEAR}）",
-    )
+def write_nicknames_tsv(path: str, nick_rows: List[List[str]]):
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write("teamid\tnickname\n")
+        for teamid, nickname in nick_rows:
+            f.write(f"{teamid}\t{nickname}\n")
 
-    args = parser.parse_args()
 
-    input_path = args.input
-    outdir = args.outdir
-    contest_year = args.year
+def read_nicknames_tsv(path: str) -> Dict[str, str]:
+    """读取 nicknames.tsv -> dict(teamid -> nickname)。"""
+    mapping: Dict[str, str] = {}
+    with open(path, "r", encoding="utf-8") as f:
+        first = True
+        for line in f:
+            line = line.rstrip("\n")
+            if not line:
+                continue
+            if first:
+                first = False
+                if line.lower().startswith("teamid"):
+                    continue
+            parts = line.split("\t")
+            if len(parts) < 2:
+                continue
+            teamid = parts[0].strip()
+            nickname = "\t".join(parts[1:]).strip()
+            if teamid:
+                mapping[teamid] = nickname
+    return mapping
 
-    os.makedirs(outdir, exist_ok=True)
 
-    df = load_registration(input_path)
+# ===================== 子命令：gen =====================
 
-    teams_rows, accounts_rows = build_teams_and_accounts(df, contest_year)
+def cmd_gen(args):
+    os.makedirs(args.outdir, exist_ok=True)
 
-    groups_path = os.path.join(outdir, "groups.tsv")
-    teams_path = os.path.join(outdir, "teams.tsv")
-    accounts_path = os.path.join(outdir, "accounts.tsv")
+    df = load_registration(args.input)
+    teams_rows, accounts_rows, nick_rows = build_teams_accounts_nicks(df, args.year)
+
+    groups_path = os.path.join(args.outdir, "groups.tsv")
+    teams_path = os.path.join(args.outdir, "teams.tsv")
+    accounts_path = os.path.join(args.outdir, "accounts.tsv")
+    nicks_path = os.path.join(args.outdir, "nicknames.tsv")
 
     write_groups_tsv(groups_path)
     write_teams_tsv(teams_path, teams_rows)
     write_accounts_tsv(accounts_path, accounts_rows)
+    write_nicknames_tsv(nicks_path, nick_rows)
 
     print(f"已生成：{groups_path}")
-    print(f"已生成：{teams_path}")
+    print(f"已生成：{teams_path}（DOMjudge 队伍名=真名）")
     print(f"已生成：{accounts_path}")
+    print(f"已生成：{nicks_path}（滚榜映射 teamid->昵称）")
     print(f"共生成 {len(teams_rows)} 个队伍 / 账号。")
+
+
+# ===================== 子命令：patch（NDJSON event-feed） =====================
+
+def cmd_patch(args):
+    """
+    读取 DOMjudge event-feed（NDJSON，每行一个 JSON 事件），把 teams 事件中的 data.name 改成昵称。
+    输出仍然是 NDJSON，保证 resolver 可直接使用。
+    """
+    nick = read_nicknames_tsv(args.nick)
+    replaced = 0
+    total_lines = 0
+    team_events = 0
+
+    with open(args.infile, "r", encoding="utf-8") as fin, open(args.outfile, "w", encoding="utf-8") as fout:
+        for line in fin:
+            line = line.strip()
+            if not line:
+                continue
+
+            total_lines += 1
+            obj = json.loads(line)
+
+            # DOMjudge event feed teams 事件结构示例：
+            # {"type":"teams","op":"create","data":{"id":2025001,"name":"真名",...}}
+            if isinstance(obj, dict) and obj.get("type") == "teams":
+                team_events += 1
+                d = obj.get("data")
+                if isinstance(d, dict):
+                    tid = d.get("id")
+                    if tid is not None:
+                        tid = str(tid)
+                        if tid in nick:
+                            d["name"] = nick[tid]
+                            replaced += 1
+
+            fout.write(json.dumps(obj, ensure_ascii=False) + "\n")
+
+    print(f"已写出：{args.outfile}")
+    print(f"输入事件行数：{total_lines}，其中 teams 事件：{team_events}")
+    print(f"已替换队伍名数量：{replaced}")
+    if team_events == 0:
+        print("提示：输入文件中没有 type:'teams' 事件。请确认这是完整的 DOMjudge event-feed。")
+
+
+# ===================== main =====================
+
+def main():
+    parser = argparse.ArgumentParser(description="CNB DOMjudge TSV 生成 + event-feed 昵称替换工具")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_gen = sub.add_parser("gen", help="从 Excel 生成 groups/teams/accounts/nicknames TSV")
+    p_gen.add_argument("--input", required=True, help="报名信息 Excel 文件路径")
+    p_gen.add_argument("--outdir", default=".", help="输出目录（默认当前目录）")
+    p_gen.add_argument("--year", type=int, default=CONTEST_YEAR, help=f"比赛年份（默认 {CONTEST_YEAR}）")
+    p_gen.set_defaults(func=cmd_gen)
+
+    p_patch = sub.add_parser("patch", help="替换 DOMjudge event-feed（NDJSON）中 teams 的 name 为昵称")
+    p_patch.add_argument("--nick", required=True, help="nicknames.tsv 路径（gen 输出）")
+    p_patch.add_argument("--in", dest="infile", required=True, help="输入 event-feed.json（NDJSON）")
+    p_patch.add_argument("--out", dest="outfile", required=True, help="输出 event-feed.nick.json（NDJSON）")
+    p_patch.set_defaults(func=cmd_patch)
+
+    args = parser.parse_args()
+    args.func(args)
 
 
 if __name__ == "__main__":
     main()
+
 
 ```
 
@@ -473,11 +571,17 @@ if __name__ == "__main__":
 
 **域名/domjudge/api/v4/contests/{contest_id}/event-feed/?stream=false**输入管理员账户的账号密码，获得event-feed再改后缀即可
 
+
+
 接下来resolver文件夹里新建一个文件夹叫做CDP,把先前的event-feed.json放进去，之后点击award.bat进行一个初始化，初始化你想要设置的奖项，然后在当前文件夹打开powershel输入
-```bash
+```bash 
 .\resolver.bat CDP
 ```
 就可以运行了
+这时候我们会发现，哇塞，怎么榜单上是真实名字，完全没有想要的效果
+这是因为我们在domjudge系统里用的是真实名字（为了方便最后颁发奖项），所以我们需要一个映射把真实名字变成想要榜单的名字，依旧是用第一部分的那个脚本，执行那个注释里的命令,完成名称的替换
+这时候再进行测试就好了
+### windows环境下
 可能存在的问题有：**中文名字全部变成框框了**，要解决这个问题的话，你得在
 **resolver.bat**文件夹的开头加入两行代码
 echo off为自带的，无需理会
@@ -486,10 +590,17 @@ echo off为自带的，无需理会
 set "ICPC_FONT=Microsoft YaHei"
 set "ICPC_FONT_NAME=Microsoft YaHei"
 ```
+如果是想要让滚榜没这么自动，可以把使用award.bat设置多一点奖项，让大部分名字都能念得到。
+### linux环境下  
+如果是linux环境，可以查看
+[scandi的博客](www.baidu.com)
 
 哦对了，如果这两个bat打不开，大概率是因为没有java环境，这里我就不赘述怎么配置环境了，自己上网搜索即可
 
-
+## 注意事项
+！！！！！！在拉题的时候不要拉到热身赛上了！！！！
+然后拉完题之后最好拉一个测试的比赛有所有的题，然后把std都交一遍，检查一下数据是不是有问题
+我们这次检查出了好多问题，包括pdf缺失（不知道为什么     
 ## 后记
 还有什么要说吗，让我想想，没有的话就先这样，还打算写一个计网和数据结构的复习笔记呢。
 哦，记起来了，可能要讲讲用牛客验题的规范还有spj的写法。挖个坑改日再写吧
