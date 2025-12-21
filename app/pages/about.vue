@@ -9,10 +9,10 @@ useSeoMeta({
 
 onMounted(() => {
 	// fetchTotalStats()
-})
+})//待完善
 
-const layoutStore = useLayoutStore()
-layoutStore.setAside([])
+const layoutStore = useLayoutStore()//管理布局状态
+layoutStore.setAside([])//不显示侧边栏
 
 const birthYear = appConfig.component.stats.birthYear
 const age = new Date().getFullYear() - birthYear
@@ -21,7 +21,6 @@ const age = new Date().getFullYear() - birthYear
 const skills = [
 	{ name: '前端开发', level: 90 },
 	{ name: '后端开发', level: 75 },
-	{ name: 'UI/UX设计', level: 80 },
 	{ name: '项目管理', level: 70 },
 ]
 
@@ -46,7 +45,7 @@ const hobbies = [
 			</div>
 		</div>
 	</header>
-
+	// 个人信息卡片
 	<div class="cards-grid">
 		<div class="card intro-card">
 			<p>你好, 很高兴认识你</p>
@@ -64,20 +63,6 @@ const hobbies = [
 				<span class="value">{{ age }} 岁</span>
 			</div>
 		</div>
-
-		<!-- <div class="card motto-card">
-			<span class="label">座右铭</span>
-			<div class="motto-content">
-				<p class="motto-text">
-					人生得意须尽欢
-				</p>
-				<div class="motto-decoration">
-					<div class="decoration-line" />
-					<div class="decoration-dot" />
-					<div class="decoration-line" />
-				</div>
-			</div>
-		</div> -->
 
 		<div class="card tech-card">
 			<span class="label">关注</span>

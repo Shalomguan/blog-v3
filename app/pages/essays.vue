@@ -6,9 +6,15 @@ const layoutStore = useLayoutStore()
 layoutStore.setAside(['blog-stats', 'blog-tech', 'blog-log', 'comm-group'])
 
 const title = '说说'
-const description = '记录生活点滴，一些想法。'
-const image = 'https://bu.dusays.com/2025/02/18/67b46c6d999ea.webp'
-useSeoMeta({ title, description, ogImage: image })
+// const description = '记录生活点滴，一些想法。'
+// const image = 'https://pic.gslpro.top/redhat.jpg'
+useSeoMeta({
+  title,
+  // description,
+  ogTitle: title,
+  // ogDescription: description,
+  // ogImage: image,
+}) //怎么没用
 
 const { author } = useAppConfig()
 
@@ -17,20 +23,21 @@ const recentTalks = [...talks]
   .slice(0, 30)
 
 function replyTalk(content: string): void {
-  const input = document.querySelector('#twikoo .tk-input textarea')
+  const input = document.querySelector('#twikoo .tk-input textarea') //找到输入框
   if (!(input instanceof HTMLTextAreaElement)) return
 
   if (content.trim()) {
-    const quotes = content.split('\n').map(str => `> ${str}`)
+    const quotes = content.split('\n').map(str => `> ${str}`) // 转为引用格式
+      .join('\n')
     input.value = `${quotes}\n\n`
   } else {
     input.value = ''
   }
-  input.dispatchEvent(new InputEvent('input'))
+  input.dispatchEvent(new InputEvent('input')) 
 
   const length = input.value.length
   input.setSelectionRange(length, length)
-  input.focus()
+  input.focus() //直接把光标放到末尾
 }
 
 function getEssayDate(date?: string | Date) {
@@ -39,7 +46,7 @@ function getEssayDate(date?: string | Date) {
   }
   
   const appConfig = useAppConfig()
-  return toDate(date, { timeZone: appConfig.timezone })
+  return toDate(date, { timeZone: appConfig.timezone }) //统一时区为我的时区
     .toLocaleString(undefined, {
       year: 'numeric',
       month: '2-digit',
@@ -47,12 +54,11 @@ function getEssayDate(date?: string | Date) {
       hour: '2-digit',
       minute: '2-digit',
     })
-    .replace(/\//g, '-') 
+    .replace(/\//g, '-') //正则替换
 }
 </script>
 
 <template>
-<ZPageBanner :title :description :image />
 
 <div class="talk-list">
   <div class="talk-item" v-for="talk in recentTalks" :key="talk.date">
@@ -91,7 +97,7 @@ function getEssayDate(date?: string | Date) {
           <span>{{ talk.location }}</span>
         </ZRawLink>
       </div>
-      <button class="comment-btn" v-tip="'评论'" @click="replyTalk(talk.text)">
+      <button class="comment-btn" v-tip="'评论'" @click="replyTalk(talk.text || '')">
         <Icon name="ph:chats-bold" />
       </button>
     </div>

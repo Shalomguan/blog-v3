@@ -57,7 +57,7 @@ const blogConfig = {
 		/** 禁止搜索引擎收录的路径 */
 		robotsNotIndex: ['/preview', '/previews/*'],
 	},
-
+		
 	/** 博客 Atom 订阅源 */
 	feed: {
 		/** 订阅源最大文章数量 */
