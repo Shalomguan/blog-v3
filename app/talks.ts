@@ -15,7 +15,7 @@ export default [
   //     poster: 'https://lf-package-cn.feishucdn.com/obj/atsx-throne/hire-fe-prod/portal/i18n/static/image/video-poster.d9fdf4be.jpeg'
   //   },
   //   tags: ['游戏'],
-  //   location: '天津'
+  //   location: '武汉'
   // },
   // {
   //   text: '这是一个包含B站视频的示例。',
@@ -25,7 +25,7 @@ export default [
   //     id: 'BV1Yr421p7rW'
   //   },
   //   tags: ['网站'],
-  //   location: '天津'
+  //   location: '武汉'
   // },
   // {
   //   text: '这是一个同时包含<b>视频</b>和<b>图片</b>的示例。<br>支持多种媒体格式的展示。',
@@ -40,6 +40,6 @@ export default [
   //     id: 'BV1xx411c7mD'
   //   },
   //   tags: ['旅行'],
-  //   location: '成都'
+  //   location: '温州'
   // }
 ] as TalkItem[]

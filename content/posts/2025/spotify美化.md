@@ -21,6 +21,9 @@ yay -S spicetify-cli
 paru -S spicetify-cli
 ```
 ## 歌词插件
+### Beautiful lyrics
+直接可以全屏歌词，但是不支持翻译
+在插件商城直接下载就好了，我感觉可以代替fullappdisplay,因为fullappdisplay有时候可能会有一些bug
 ### lyrics-plus
 是一个增强歌词的插件，在找不到歌词的时候他会在别的源去搜索歌词4
 ```bash
