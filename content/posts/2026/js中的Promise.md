@@ -1,11 +1,10 @@
 ---
 title: JavaScript Promise 执行模型：then 回调的真实调用时机
-date: 2026-1-10 19:18:00
+date: 2026-01-10 19:18:00
 categories: [fullstackopen]
 tags: [javascript,nodejs]
-description: 
+description:
 ---
-
 # 从 savedPerson 说起：我终于理解了 Promise.then
 
 一开始我以为我懂 Promise。
@@ -13,7 +12,7 @@ description:
 `then` 嘛，不就是“异步回调”吗？
 链式调用，拿结果，用就完了。
 直到我在写 Full Stack Open 的 Phonebook 后端时，被一个变量**狠狠干了一下**。
----
+------------------------------------------------------------------------
 
 ## 一个看起来很正常的代码
 
