@@ -2,23 +2,8 @@ import type { H3Event } from 'h3'
 import { createError } from 'h3'
 import { getAdminEnv } from './admin-auth'
 
-interface GitHubTreeItem {
-	path: string
-	mode: string
-	type: 'blob' | 'tree' | 'commit'
-	sha: string
-	size?: number
-	url: string
-}
-
-interface GitHubTreeResponse {
-	sha: string
-	truncated: boolean
-	tree: GitHubTreeItem[]
-}
-
 interface GitHubContentResponse {
-	type: string
+	type: 'file' | 'dir' | 'symlink' | 'submodule'
 	encoding?: string
 	size: number
 	name: string
@@ -40,6 +25,8 @@ interface GitHubConfig {
 	repo: string
 	token: string
 }
+
+type GitHubDirectoryResponse = GitHubContentResponse[]
 
 function getGitHubConfig(event: H3Event): GitHubConfig {
 	const token = getAdminEnv(event, 'githubToken')
@@ -90,6 +77,7 @@ async function githubRequest<T>(
 ): Promise<T> {
 	const config = getGitHubConfig(event)
 	const url = `https://api.github.com/repos/${config.owner}/${config.repo}${path}`
+	const userAgent = `${config.owner}-${config.repo}-admin`
 
 	try {
 		return await $fetch<T>(url, {
@@ -97,6 +85,7 @@ async function githubRequest<T>(
 			headers: {
 				Accept: 'application/vnd.github+json',
 				Authorization: `Bearer ${config.token}`,
+				'User-Agent': userAgent,
 				'X-GitHub-Api-Version': '2022-11-28',
 				...options.headers,
 			},
@@ -106,11 +95,13 @@ async function githubRequest<T>(
 		const statusCode = (error as { status?: number, statusCode?: number }).statusCode
 			?? (error as { status?: number }).status
 			?? 500
-		const statusMessage = (error as { statusMessage?: string, message?: string }).statusMessage
+		const githubMessage = (error as { data?: { message?: string } }).data?.message
+		const statusMessage = githubMessage
+			?? (error as { statusMessage?: string, message?: string }).statusMessage
 			?? (error as { message?: string }).message
 			?? 'GitHub request failed'
 
-		throw createError({ statusCode, statusMessage })
+		throw createError({ statusCode, statusMessage: `GitHub request failed: ${statusMessage}` })
 	}
 }
 
@@ -132,21 +123,40 @@ async function githubRequestNullable<T>(
 
 export async function listGitHubMarkdownFiles(event: H3Event, kind: 'post' | 'talk'): Promise<AdminFileItem[]> {
 	const { branch } = getGitHubConfig(event)
-	const basePath = kind === 'post' ? 'content/posts/' : 'content/talks/'
-	const tree = await githubRequest<GitHubTreeResponse>(
+	const basePath = kind === 'post' ? 'content/posts' : 'content/talks'
+	const files: AdminFileItem[] = []
+
+	await collectGitHubMarkdownFiles(event, basePath, branch, files)
+
+	return files.sort((left, right) => right.path.localeCompare(left.path))
+}
+
+async function collectGitHubMarkdownFiles(
+	event: H3Event,
+	directoryPath: string,
+	branch: string,
+	files: AdminFileItem[],
+): Promise<void> {
+	const entries = await githubRequest<GitHubDirectoryResponse>(
 		event,
-		`/git/trees/${encodeURIComponent(branch)}?recursive=1`,
+		`/contents/${encodePath(directoryPath)}?ref=${encodeURIComponent(branch)}`,
 	)
 
-	return tree.tree
-		.filter(item => item.type === 'blob' && item.path.startsWith(basePath) && item.path.endsWith('.md'))
-		.map(item => ({
-			name: item.path.split('/').at(-1) || item.path,
-			path: item.path,
-			sha: item.sha,
-			size: item.size,
-		}))
-		.sort((left, right) => right.path.localeCompare(left.path))
+	await Promise.all(entries.map(async (item) => {
+		if (item.type === 'dir') {
+			await collectGitHubMarkdownFiles(event, item.path, branch, files)
+			return
+		}
+
+		if (item.type === 'file' && item.path.endsWith('.md')) {
+			files.push({
+				name: item.path.split('/').at(-1) || item.path,
+				path: item.path,
+				sha: item.sha,
+				size: item.size,
+			})
+		}
+	}))
 }
 
 export async function readGitHubMarkdownFile(event: H3Event, path: string): Promise<{ content: string, path: string, sha: string } | null> {
