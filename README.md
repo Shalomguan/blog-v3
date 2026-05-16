@@ -2,7 +2,7 @@
 
 [![框架](https://img.shields.io/badge/框架-Nuxt-00DC82?logo=Nuxt.js)](https://nuxt.com/)
 [![CMS](https://img.shields.io/badge/CMS-Nuxt%20Content-00DC82?logo=Nuxt.js)](https://content.nuxt.com/)
-[![部署平台](https://img.shields.io/badge/部署平台-Vercel-000000?logo=Vercel)](https://vercel.com/)
+[![部署平台](https://img.shields.io/badge/部署平台-Cloudflare%20Pages-F38020?logo=Cloudflare)](https://pages.cloudflare.com/)
 [![访问统计](https://img.shields.io/badge/访问统计-Umami-000000?logo=Umami)](https://github.com/umami-software/umami)
 [![代码风格](https://img.shields.io/badge/代码风格-ESLint-4B32C3?logo=ESLint)](https://eslint.org/)
 [![代码风格](https://img.shields.io/badge/代码风格-Stylelint-263238?logo=Stylelint)](https://stylelint.io/)
@@ -71,11 +71,13 @@
 │   │   ├── partial # 微型组件
 │   │   ├── popover # 弹窗组件
 │   │   ├── post # 文章组件
+│   │   ├── talk # 说说组件
 │   │   ├── util # 功能组件
 │   │   └── widget # 侧栏小组件
 │   ├── composables # Vue 组合式函数
 │   ├── pages # 页面
 │   │   ├── [...slug].vue # 正文、404页面
+│   │   ├── admin.vue # 内容后台
 │   │   ├── archive.vue # 归档
 │   │   ├── link.vue # 友链
 │   │   ├── index.vue # 首页
@@ -91,6 +93,7 @@
 ├── content # 文章
 │   ├── posts # 正式文章
 │   ├── previews # 草稿文章，仅可被站内搜索
+│   ├── talks # 说说
 │   ├── link.md # 友链要求
 │   └── theme.md # 主题介绍
 ├── modules # Nuxt 模块
@@ -104,10 +107,12 @@
 ├── scripts # npm 脚本
 ├── server # 服务端
 │   ├── api # 接口
+│   │   ├── admin # 内容后台接口
 │   │   └── stats.get.ts # 博客静态统计
-│   └── routes # 根路由
-│       ├── atom.xml.get.ts # Atom 订阅源
-│       └── zhilu.opml.get.ts # OPML 订阅源聚合
+│   ├── routes # 根路由
+│   │   ├── atom.xml.get.ts # Atom 订阅源
+│   │   └── zhilu.opml.get.ts # OPML 订阅源聚合
+│   └── utils # 服务端工具
 ├── blog.config.ts # 博客静态公共配置★
 ├── content.config.ts # Nuxt Content 配置
 ├── edgeone.json # EdgeOne 配置
@@ -147,6 +152,75 @@ pnpm init-project # 初始化项目配置
 pnpm new
 ```
 
+### 创建说说
+
+说说内容放在 `content/talks/` 目录下，文件名建议使用日期时间，例如 `2026-05-16-13-30.md`。
+
+```md
+---
+date: 2026-05-16 13:30
+title: 今天的说说
+tags:
+  - 生活
+location: 武汉
+images:
+  - https://example.com/image.jpg
+---
+
+这里可以直接写 Markdown。
+
+- 支持列表
+- 支持链接
+- 支持图片
+```
+
+### 内容后台
+
+后台入口是 `/admin`，不会加入侧边栏导航。后台支持新建/编辑文章和说说，编辑器支持 Markdown 与实时预览，保存时会通过 GitHub API 自动提交到 `Shalomguan/blog-v3` 的 `main` 分支，随后由 Cloudflare Pages 重新构建发布。
+
+后台第一版不支持删除内容，图片只填写 URL，不做上传。文章可以保存 `draft: true` 字段；这个字段会写入 Markdown frontmatter，是否在前台隐藏取决于页面查询逻辑。
+
+#### 后台环境变量
+
+在 Cloudflare Pages 的项目设置中添加以下环境变量：
+
+```env
+ADMIN_PASSWORD_SHA256=管理员密码的 SHA-256 hex
+ADMIN_SESSION_SECRET=至少 32 位随机字符串
+GITHUB_TOKEN=GitHub fine-grained token
+GITHUB_OWNER=Shalomguan
+GITHUB_REPO=blog-v3
+GITHUB_BRANCH=main
+```
+
+生成后台密码哈希：
+
+```sh
+node -e "console.log(require('crypto').createHash('sha256').update('你的后台密码').digest('hex'))"
+```
+
+生成登录 Cookie 签名密钥：
+
+```sh
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+GitHub Token 建议使用 Fine-grained personal access token：
+
+- Repository access 只选择 `Shalomguan/blog-v3`
+- Permissions 只授予 `Contents: Read and write`
+- 不要把 Token、后台密码或密钥提交到仓库
+
+#### 后台使用流程
+
+1. 配好 Cloudflare Pages 环境变量并重新部署。
+2. 打开 `https://你的域名/admin`。
+3. 输入后台密码登录。
+4. 选择“文章”或“说说”。
+5. 新建内容，或者从列表选择已有内容编辑。
+6. 点击保存后，后台会提交一个 GitHub commit。
+7. Cloudflare Pages 收到 GitHub 更新后自动重新构建，构建完成后前台生效。
+
 ### 运行开发环境
 
 ```sh
@@ -155,20 +229,30 @@ pnpm dev
 
 ### 构建生产环境
 
+如果只是纯静态博客，可以继续使用：
+
 ```sh
 pnpm generate
 pnpm preview
 ```
 
+如果要启用 `/admin` 后台，不能使用纯静态 SSG 部署，需要保留 Nuxt 服务端 API：
+
+```sh
+pnpm build
+pnpm preview
+```
+
 ### 部署指南
 
-支持 Vercel、Netlify、Cloudflare Pages、EdgeOne 等平台部署。建议采用静态（SSG）部署方式：
+支持 Vercel、Netlify、Cloudflare Pages、EdgeOne 等平台部署。启用后台时推荐使用 Cloudflare Pages，并以 Nuxt/Nitro 的 Cloudflare Pages 模式部署：
 
-- 构建命令: `pnpm generate`
-- 输出目录: `dist`
+- 构建命令: `pnpm build`
+- 输出目录: `.output/public`
 - 安装命令: `pnpm i`
+- 环境变量: `NITRO_PRESET=cloudflare_pages`
 
-如果直接使用平台提供的“Nuxt”预设部署，则会变成 SSR 模式，此模式每次访问都会等待服务端重新渲染。请参阅 [Nuxt 文档](https://nuxt.com/docs/getting-started/deployment) 和 [Nuxt Content 文档](https://content.nuxt.com/docs/deploy/static) 的“部署”一节。
+如果不启用后台，只想部署静态站点，可以使用 `pnpm generate`，输出目录为 `dist`。请参阅 [Nuxt 文档](https://nuxt.com/docs/getting-started/deployment) 和 [Nuxt Content 文档](https://content.nuxt.com/docs/deploy/static) 的“部署”一节。
 
 #### 疑难解答
 

@@ -31,7 +31,8 @@ const articleSchema = z.object({
 })
 
 const talkSchema = z.object({
-	text: z.string().optional(),
+	title: z.string().optional(),
+	description: z.string().optional(),
 	date: z.string(),
 	images: z.array(z.string()).optional(),
 	video: z.object({
@@ -46,13 +47,16 @@ const talkSchema = z.object({
 
 export const collections = {
 	content: defineCollection(asSitemapCollection({
-		source: '**',
+		source: {
+			include: '**',
+			exclude: ['talks/**'],
+		},
 		type: 'page',
 		schema: articleSchema,
 	})),
 	talks: defineCollection({
-		type: 'data',
-		source: 'talks',
+		type: 'page',
+		source: 'talks/**/*.md',
 		schema: talkSchema,
 	}),
 }

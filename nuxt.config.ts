@@ -81,6 +81,8 @@ export default defineNuxtConfig({
 				acc![from] = { redirect: { to, statusCode: 308 } }
 				return acc
 			}, {}),
+		'/admin': { prerender: false },
+		'/api/admin/**': { prerender: false },
 		'/api/stats': { prerender: true, headers: { 'Content-Type': 'application/json' } },
 		'/atom.xml': { prerender: true, headers: { 'Content-Type': 'application/xml' } },
 		'/favicon.ico': { redirect: { to: blogConfig.favicon } },
@@ -88,6 +90,12 @@ export default defineNuxtConfig({
 	},
 
 	runtimeConfig: {
+		adminPasswordSha256: '',
+		adminSessionSecret: '',
+		githubBranch: 'main',
+		githubOwner: 'Shalomguan',
+		githubRepo: 'blog-v3',
+		githubToken: '',
 		// @keep-sorted
 		public: {
 			arch,
