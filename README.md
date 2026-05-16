@@ -248,7 +248,7 @@ pnpm preview
 支持 Vercel、Netlify、Cloudflare Pages、EdgeOne 等平台部署。启用后台时推荐使用 Cloudflare Pages，并以 Nuxt/Nitro 的 Cloudflare Pages 模式部署：
 
 - 构建命令: `pnpm build`
-- 输出目录: `.output/public`
+- 输出目录: `dist`
 - 安装命令: `pnpm i`
 - 环境变量: `NITRO_PRESET=cloudflare_pages`
 

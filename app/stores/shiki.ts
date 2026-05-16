@@ -82,16 +82,14 @@ export const useShikiStore = defineStore('shiki', () => {
 		}
 		catch {
 			const { createOnigurumaEngine } = await import('shiki/engine-oniguruma.mjs')
-			// @ts-expect-error CDN 动态引入的包无类型
-			engine = await createOnigurumaEngine(import('https://esm.sh/shiki/wasm'))
+			engine = await createOnigurumaEngine(import('shiki/wasm'))
 		}
 
 		return createHighlighterCore({ themes: [catppuccinLatte, oneDarkPro], engine })
 	}
 
 	async function loadLang(...langs: string[]) {
-		// @ts-expect-error CDN 动态引入的包无类型
-		const { bundledLanguages } = await import('https://esm.sh/shiki/langs') as typeof import('shiki/langs')
+		const { bundledLanguages } = await import('shiki/langs')
 		const loadedLangs = shiki.getLoadedLanguages()
 
 		await Promise.all(langs
