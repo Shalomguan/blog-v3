@@ -18,10 +18,48 @@ const { data: talkData } = await useAsyncData('talks', () =>
 )
 
 const recentTalks = computed(() => (talkData.value ?? []) as TalkContentItem[])
+const visibleCount = ref(8)
+const visibleTalks = computed(() => recentTalks.value.slice(0, visibleCount.value))
+const hasMoreTalks = computed(() => visibleCount.value < recentTalks.value.length)
 
-function replyTalk(content: string): void {
-	const input = document.querySelector('#twikoo .tk-input textarea')
-	if (!(input instanceof HTMLTextAreaElement)) return
+function loadMoreTalks(): void {
+	visibleCount.value += 8
+}
+
+const commentAnchor = useTemplateRef<HTMLElement>('comment-anchor')
+const showComments = ref(false)
+
+onMounted(() => {
+	useIntersectionObserver(
+		commentAnchor,
+		([entry]) => {
+			if (entry?.isIntersecting)
+				showComments.value = true
+		},
+		{ rootMargin: '600px 0px' },
+	)
+})
+
+async function waitForCommentInput(): Promise<HTMLTextAreaElement | null> {
+	for (let attempts = 0; attempts < 30; attempts++) {
+		const input = document.querySelector('#twikoo .tk-input textarea')
+		if (input instanceof HTMLTextAreaElement)
+			return input
+		await new Promise(resolve => setTimeout(resolve, 100))
+	}
+
+	return null
+}
+
+async function replyTalk(content: string): Promise<void> {
+	showComments.value = true
+	await nextTick()
+
+	const input = await waitForCommentInput()
+	if (!input) {
+		commentAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+		return
+	}
 
 	if (content.trim()) {
 		const quotes = content.split('\n')
@@ -43,9 +81,10 @@ function replyTalk(content: string): void {
 <template>
 <div class="talk-list">
 	<TalkCard
-		v-for="talk in recentTalks"
+		v-for="(talk, index) in visibleTalks"
 		:key="talk.path"
 		:talk="talk"
+		:eager-media="index < 2"
 		@reply="replyTalk"
 	/>
 
@@ -53,12 +92,31 @@ function replyTalk(content: string): void {
 		暂无说说
 	</p>
 
+	<button
+		v-if="hasMoreTalks"
+		class="load-more"
+		type="button"
+		@click="loadMoreTalks"
+	>
+		加载更多
+	</button>
+
 	<div class="talk-footer">
-		<p>仅显示最近 30 条记录</p>
+		<p>已显示 {{ visibleTalks.length }} / {{ recentTalks.length }} 条记录</p>
 	</div>
 </div>
 
-<PostComment />
+<div ref="comment-anchor" class="comment-anchor">
+	<LazyPostComment v-if="showComments" />
+	<button
+		v-else
+		class="comment-loader"
+		type="button"
+		@click="showComments = true"
+	>
+		加载评论
+	</button>
+</div>
 </template>
 
 <style lang="scss" scoped>
@@ -73,5 +131,26 @@ function replyTalk(content: string): void {
 	color: var(--c-text-3);
 	font-size: 1rem;
 	text-align: center;
+}
+
+.load-more,
+.comment-loader {
+	display: block;
+	margin: 1.5rem auto;
+	padding: 0.55rem 1rem;
+	border-radius: 999px;
+	background-color: var(--c-bg-2);
+	color: var(--c-text-2);
+	font-size: 0.9rem;
+	transition: background-color 0.2s, color 0.2s;
+
+	&:hover {
+		background-color: var(--c-primary-soft);
+		color: var(--c-primary);
+	}
+}
+
+.comment-anchor {
+	min-height: 6rem;
 }
 </style>

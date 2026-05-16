@@ -3,6 +3,7 @@ import { toDate } from 'date-fns-tz'
 import type { TalkContentItem } from '~/types/talk'
 
 const props = defineProps<{
+	eagerMedia?: boolean
 	talk: TalkContentItem
 }>()
 
@@ -49,6 +50,8 @@ const replyContent = computed(() => props.talk.description || props.talk.title |
 				v-for="image in talk.images"
 				:key="image"
 				class="image"
+				:fetchpriority="eagerMedia ? 'high' : 'auto'"
+				:loading="eagerMedia ? 'eager' : 'lazy'"
 				:src="image"
 			/>
 		</div>
@@ -101,6 +104,8 @@ const replyContent = computed(() => props.talk.description || props.talk.title |
 	border-radius: 8px;
 	box-shadow: 0 0 0 1px var(--c-bg-soft);
 	animation: float-in 0.3s backwards;
+	content-visibility: auto;
+	contain-intrinsic-size: auto 320px;
 }
 
 .talk-meta {

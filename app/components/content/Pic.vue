@@ -5,11 +5,17 @@ const props = withDefaults(defineProps<{
 	src: string
 	mirror?: ImgService
 	caption?: string
+	decoding?: 'async' | 'auto' | 'sync'
+	fetchpriority?: 'auto' | 'high' | 'low'
 	width?: string | number
 	height?: string | number
+	loading?: 'eager' | 'lazy'
 	zoom?: boolean
 }>(), {
 	caption: '',
+	decoding: 'async',
+	fetchpriority: 'auto',
+	loading: 'lazy',
 	zoom: true,
 })
 
@@ -34,7 +40,7 @@ const { open } = popoverStore.use(
 		ref="pic"
 		class="image"
 		:style="{ cursor: zoom && 'zoom-in' }"
-		:src :alt="caption" :width :height :mirror
+		:src :alt="caption" :width :height :mirror :loading :decoding :fetchpriority
 		@click="zoom && open()"
 	/>
 	<figcaption v-if="caption" aria-hidden v-text="caption" />

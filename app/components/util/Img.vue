@@ -7,9 +7,15 @@ const props = withDefaults(defineProps<{
 	width?: string | number
 	height?: string | number
 	alt?: string
+	decoding?: 'async' | 'auto' | 'sync'
+	fetchpriority?: 'auto' | 'high' | 'low'
+	loading?: 'eager' | 'lazy'
 	mirror?: ImgService
 }>(), {
 	alt: '',
+	decoding: 'async',
+	fetchpriority: 'auto',
+	loading: 'lazy',
 })
 
 const refinedSrc = computed(() => {
@@ -31,6 +37,9 @@ const refinedSrc = computed(() => {
 	:alt="alt"
 	:width="width"
 	:height="height"
+	:decoding="decoding"
+	:fetchpriority="fetchpriority"
+	:loading="loading"
 	:referrerpolicy="mirror ? 'no-referrer' : undefined"
 />
 </template>
