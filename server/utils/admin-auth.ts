@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { createError, deleteCookie, getCookie, getRequestURL, setCookie } from 'h3'
+import { createError, deleteCookie, getCookie, getRequestHeader, getRequestIP, getRequestURL, setCookie, setResponseHeader } from 'h3'
 
 const ADMIN_COOKIE = 'admin_session'
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7
@@ -111,4 +111,90 @@ export async function requireAdminSession(event: H3Event): Promise<void> {
 	if (await verifyAdminSession(event)) return
 
 	throw createError({ statusCode: 401, statusMessage: 'Admin login required' })
+}
+
+/**
+ * 登录失败限流：按客户端 IP 计数并指数退避，另加一层全局熔断以覆盖换 IP 的情况。
+ *
+ * 计数只保存在当前 Worker 实例的内存中，isolate 回收后会重置，
+ * 因此它只提高在线爆破的成本，不能替代持久化的访问控制。
+ * 如需跨实例的强限流，应把计数放进 D1 或 KV。
+ */
+interface LoginAttempt {
+	count: number
+	lockedUntil: number
+	windowStart: number
+}
+
+const LOGIN_FAILURE_WINDOW = 15 * 60 * 1000
+const LOGIN_MAX_FAILURES = 5
+const LOGIN_BASE_LOCKOUT = 60 * 1000
+const LOGIN_MAX_LOCKOUT = 30 * 60 * 1000
+const LOGIN_MAX_TRACKED_IPS = 5000
+const LOGIN_GLOBAL_WINDOW = 10 * 60 * 1000
+const LOGIN_GLOBAL_MAX_FAILURES = 100
+const LOGIN_GLOBAL_COOLDOWN = 5 * 60 * 1000
+
+const loginAttempts = new Map<string, LoginAttempt>()
+let globalFailures: number[] = []
+let globalLockedUntil = 0
+
+function getLoginClientKey(event: H3Event): string {
+	return getRequestHeader(event, 'cf-connecting-ip')
+		|| getRequestIP(event, { xForwardedFor: true })
+		|| 'unknown'
+}
+
+function rejectTooManyAttempts(event: H3Event, retryAfterMs: number) {
+	setResponseHeader(event, 'Retry-After', String(Math.max(1, Math.ceil(retryAfterMs / 1000))))
+	throw createError({ statusCode: 429, statusMessage: 'Too many login attempts, please try again later' })
+}
+
+export function assertLoginAllowed(event: H3Event): void {
+	const now = Date.now()
+
+	if (globalLockedUntil > now) {
+		rejectTooManyAttempts(event, globalLockedUntil - now)
+	}
+
+	const attempt = loginAttempts.get(getLoginClientKey(event))
+	if (attempt && attempt.lockedUntil > now) {
+		rejectTooManyAttempts(event, attempt.lockedUntil - now)
+	}
+}
+
+export function recordLoginFailure(event: H3Event): void {
+	const now = Date.now()
+	const key = getLoginClientKey(event)
+	const attempt = loginAttempts.get(key)
+
+	if (!attempt || now - attempt.windowStart > LOGIN_FAILURE_WINDOW) {
+		loginAttempts.set(key, { count: 1, lockedUntil: 0, windowStart: now })
+	}
+	else {
+		attempt.count += 1
+		if (attempt.count >= LOGIN_MAX_FAILURES) {
+			const lockout = Math.min(LOGIN_BASE_LOCKOUT * 2 ** (attempt.count - LOGIN_MAX_FAILURES), LOGIN_MAX_LOCKOUT)
+			attempt.lockedUntil = now + lockout
+		}
+	}
+
+	globalFailures = globalFailures.filter(timestamp => now - timestamp < LOGIN_GLOBAL_WINDOW)
+	globalFailures.push(now)
+	if (globalFailures.length > LOGIN_GLOBAL_MAX_FAILURES) {
+		globalLockedUntil = now + LOGIN_GLOBAL_COOLDOWN
+		globalFailures = []
+	}
+
+	if (loginAttempts.size > LOGIN_MAX_TRACKED_IPS) {
+		for (const [trackedKey, tracked] of loginAttempts) {
+			if (tracked.lockedUntil < now && now - tracked.windowStart > LOGIN_FAILURE_WINDOW) {
+				loginAttempts.delete(trackedKey)
+			}
+		}
+	}
+}
+
+export function recordLoginSuccess(event: H3Event): void {
+	loginAttempts.delete(getLoginClientKey(event))
 }
