@@ -1,26 +1,31 @@
 import type { FeedEntry } from './app/types/feed'
 
+const siteUrl = 'https://blog.gslpro.top/'
+// 图标/头像使用站内自托管文件（public/tx.jpg），避免第三方图床故障导致站点图标与头像不可用。
+// 订阅源与 OG 要求绝对 URL，因此这里用规范化域名拼出完整地址。
+const siteIcon = new URL('/tx.jpg', siteUrl).toString()
+
 const basicConfig = {
 	title: 'Wa的小家',
-	subtitle: "Wa's Blog",
+	subtitle: 'Wa\'s Blog',
 	// 长 description 利好于 SEO
 	description: '技术文章，经验分享，生活杂谈，代码笔记，Wa 的个人博客。',
 	author: {
 		name: 'Wa',
-		avatar: 'https://pic.gslpro.top/tx.jpg',
+		avatar: siteIcon,
 		email: 'qutypebeat@gmail.com',
-		homepage: 'https://blog.gslpro.top/',
+		homepage: siteUrl,
 	},
 	copyright: {
 		abbr: 'CC BY-NC-SA 4.0',
 		name: '署名-非商业性使用-相同方式共享 4.0 国际',
 		url: 'https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans',
 	},
-	favicon: 'https://pic.gslpro.top/tx.jpg',
+	favicon: siteIcon,
 	language: 'zh-CN',
 	timeEstablished: '2024-10-1',
 	timezone: 'Asia/Shanghai',
-	url: 'https://blog.gslpro.top/',
+	url: siteUrl,
 	defaultCategory: '未分类',
 }
 
@@ -57,7 +62,7 @@ const blogConfig = {
 		/** 禁止搜索引擎收录的路径 */
 		robotsNotIndex: ['/preview', '/previews/*'],
 	},
-		
+
 	/** 博客 Atom 订阅源 */
 	feed: {
 		/** 订阅源最大文章数量 */
@@ -76,7 +81,7 @@ const blogConfig = {
 		{ src: 'https://lib.baomitu.com/twikoo/1.6.44/twikoo.min.js', defer: true },
 	],
 
-	/** 自己部署的 Twikoo 服务 */	
+	/** 自己部署的 Twikoo 服务 */
 	twikoo: {
 		envId: 'https://twikoo-navy-one.vercel.app/',
 		preload: 'https://twikoo-navy-one.vercel.app/',
@@ -86,14 +91,14 @@ const blogConfig = {
 /** 用于生成 OPML 和友链页面配置 */
 export const myFeed: FeedEntry = {
 	author: blogConfig.author.name,
-	sitenick: '摸鱼处',
+	sitenick: 'Wa的小家',
 	title: blogConfig.title,
 	desc: blogConfig.subtitle || blogConfig.description,
 	link: blogConfig.url,
 	feed: new URL('/atom.xml', blogConfig.url).toString(),
 	icon: blogConfig.favicon,
 	avatar: blogConfig.author.avatar,
-	archs: ['Nuxt', 'Vercel'],
+	archs: ['Nuxt', 'Cloudflare'],
 	date: blogConfig.timeEstablished,
 	comment: '这是我自己',
 }
