@@ -10,14 +10,7 @@ useSeoMeta({
 const layoutStore = useLayoutStore()
 layoutStore.setAside(['blog-stats', 'blog-tech', 'comm-group'])
 
-// Cloudflare Pages 未绑定 D1 时服务端内容查询会 500，文章列表会静默为空。
-// 这里临时改为仅客户端查询（走静态 sql_dump.txt），配好 D1 后应改回 useAsyncData。
-const { data: listData, error: listError, status: listStatus } = useLazyAsyncData(
-	'index_posts',
-	() => useArticleIndexOptions(),
-	{ server: false },
-)
-const listRaw = computed(() => listData.value ?? [])
+const { data: listRaw, error: listError, status: listStatus } = await useAsyncData('index_posts', () => useArticleIndexOptions(), { default: () => [] })
 const { listSorted, isAscending, sortOrder } = useArticleSort(listRaw, { bindDirectionQuery: 'asc', bindOrderQuery: 'sort' })
 const { category, categories, listCategorized } = useCategory(listSorted, { bindQuery: 'category' })
 const { page, totalPages, listPaged } = usePagination(listCategorized, { bindQuery: 'page' })

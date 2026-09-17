@@ -11,13 +11,7 @@ const birthYear = appConfig.component.stats.birthYear
 const layoutStore = useLayoutStore()
 layoutStore.setAside(['blog-stats', 'blog-log'])
 
-// 同 index.vue：CF Pages 未绑定 D1 时服务端查询会 500，临时改为仅客户端查询。
-const { data: listData, error: listError, status: listStatus } = useLazyAsyncData(
-	'index_posts',
-	() => useArticleIndexOptions(),
-	{ server: false },
-)
-const listRaw = computed(() => listData.value ?? [])
+const { data: listRaw, error: listError, status: listStatus } = await useAsyncData('index_posts', () => useArticleIndexOptions(), { default: () => [] })
 const { listSorted, isAscending, sortOrder } = useArticleSort(listRaw)
 const { category, categories, listCategorized } = useCategory(listSorted)
 
