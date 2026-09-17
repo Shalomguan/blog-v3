@@ -49,7 +49,7 @@ export default defineAppConfig({
 		copyright: `© ${new Date().getFullYear()} ${blogConfig.author.name}`,
 		/** 侧边栏底部图标导航 */
 		iconNav: [
-			{ icon: 'ph:house-bold', text: '个人主页', url: blogConfig.author.homepage },
+			{ icon: 'ph:house-bold', text: '个人主页', url: '/' },
 			{ icon: 'ph:github-logo-bold', text: 'Shalomguan', url: 'https://github.com/Shalomguan' },
 			{ icon: 'ph:subway-bold', text: '开往', url: 'https://www.travellings.cn/' },
 		] satisfies NavItem[],

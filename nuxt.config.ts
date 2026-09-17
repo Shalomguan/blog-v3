@@ -71,6 +71,8 @@ export default defineNuxtConfig({
 			// 修复部分平台会在文章路径后添加 `/`，导致闪现 404 错误
 			// https://github.com/nuxt/content/issues/2378
 			autoSubfolderIndex: CLOUDFLARE_PAGES || GITHUB_ACTIONS || NETLIFY ? false : undefined,
+			crawlLinks: true,
+			routes: ['/', '/about', '/archive', '/essays', '/link'],
 		},
 	},
 
@@ -81,11 +83,16 @@ export default defineNuxtConfig({
 				acc![from] = { redirect: { to, statusCode: 308 } }
 				return acc
 			}, {}),
+		'/': { prerender: true },
+		'/about': { prerender: true },
 		'/admin': { prerender: false },
 		'/api/admin/**': { prerender: false },
 		'/api/stats': { prerender: true, headers: { 'Content-Type': 'application/json' } },
+		'/archive': { prerender: true },
 		'/atom.xml': { prerender: true, headers: { 'Content-Type': 'application/xml' } },
+		'/essays': { prerender: true },
 		'/favicon.ico': { redirect: { to: blogConfig.favicon } },
+		'/link': { prerender: true },
 		'/zhilu.opml': { prerender: true, headers: { 'Content-Type': 'application/xml' } },
 	},
 

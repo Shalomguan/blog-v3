@@ -10,20 +10,42 @@ useSeoMeta({
 	ogTitle: title,
 })
 
-const { data: talkData } = await useAsyncData('talks', () =>
-	queryCollection('talks')
+const TALK_PAGE_SIZE = 8
+
+async function queryTalkPage(offset = 0) {
+	return await queryCollection('talks')
 		.order('date', 'DESC')
-		.limit(30)
-		.all(),
-)
+		.skip(offset)
+		.limit(TALK_PAGE_SIZE + 1)
+		.all() as TalkContentItem[]
+}
 
-const recentTalks = computed(() => (talkData.value ?? []) as TalkContentItem[])
-const visibleCount = ref(8)
-const visibleTalks = computed(() => recentTalks.value.slice(0, visibleCount.value))
-const hasMoreTalks = computed(() => visibleCount.value < recentTalks.value.length)
+const { data: initialTalks } = await useAsyncData('talks:first-page', () => queryTalkPage(), { default: () => [] })
+const initialTalkList = (initialTalks.value ?? []) as TalkContentItem[]
+const recentTalks = ref<TalkContentItem[]>(initialTalkList.slice(0, TALK_PAGE_SIZE))
+const hasMoreTalks = ref(initialTalkList.length > TALK_PAGE_SIZE)
+const loadingMore = ref(false)
+const visibleTalks = computed(() => recentTalks.value)
 
-function loadMoreTalks(): void {
-	visibleCount.value += 8
+watch(initialTalks, (talks) => {
+	const list = (talks ?? []) as TalkContentItem[]
+	recentTalks.value = list.slice(0, TALK_PAGE_SIZE)
+	hasMoreTalks.value = list.length > TALK_PAGE_SIZE
+}, { immediate: true })
+
+async function loadMoreTalks(): Promise<void> {
+	if (loadingMore.value || !hasMoreTalks.value)
+		return
+
+	loadingMore.value = true
+	try {
+		const nextTalks = await queryTalkPage(recentTalks.value.length)
+		recentTalks.value.push(...nextTalks.slice(0, TALK_PAGE_SIZE))
+		hasMoreTalks.value = nextTalks.length > TALK_PAGE_SIZE
+	}
+	finally {
+		loadingMore.value = false
+	}
 }
 
 const commentAnchor = useTemplateRef<HTMLElement>('comment-anchor')
@@ -96,13 +118,14 @@ async function replyTalk(content: string): Promise<void> {
 		v-if="hasMoreTalks"
 		class="load-more"
 		type="button"
+		:disabled="loadingMore"
 		@click="loadMoreTalks"
 	>
-		加载更多
+		{{ loadingMore ? '加载中...' : '加载更多' }}
 	</button>
 
 	<div class="talk-footer">
-		<p>已显示 {{ visibleTalks.length }} / {{ recentTalks.length }} 条记录</p>
+		<p>已显示 {{ visibleTalks.length }} 条记录</p>
 	</div>
 </div>
 
@@ -147,6 +170,11 @@ async function replyTalk(content: string): Promise<void> {
 	&:hover {
 		background-color: var(--c-primary-soft);
 		color: var(--c-primary);
+	}
+
+	&:disabled {
+		opacity: 0.6;
+		cursor: progress;
 	}
 }
 

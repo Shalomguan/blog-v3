@@ -31,41 +31,46 @@ const listRecommended = computed(() => sort(
 <template>
 <BlogHeader class="mobile-only" to="/" tag="h1" />
 
-<UtilHydrateSafe>
-	<PostSlide v-if="listRecommended.length && page === 1 && !category" :list="listRecommended" />
+<ClientOnly>
+	<LazyPostSlide v-if="listRecommended.length && page === 1 && !category" :list="listRecommended" />
+</ClientOnly>
 
-	<div class="post-list">
-		<div class="toolbar">
-			<div>
-				<!-- 外层元素用于占位 -->
-				<UtilLink to="/preview" class="preview-entrance">
-					<Icon name="ph:file-lock-bold" />
-					查看预览文章
-				</UtilLink>
-			</div>
-
-			<PostOrderToggle
-				v-model:is-ascending="isAscending"
-				v-model:sort-order="sortOrder"
-				v-model:category="category"
-				:categories
-			/>
+<div class="post-list">
+	<div class="toolbar">
+		<div>
+			<!-- 外层元素用于占位 -->
+			<UtilLink to="/preview" class="preview-entrance">
+				<Icon name="ph:file-lock-bold" />
+				查看预览文章
+			</UtilLink>
 		</div>
 
-		<TransitionGroup tag="menu" class="proper-height" name="float-in">
-			<PostArticle
-				v-for="article, index in listPaged"
-				:key="article.path"
-				v-bind="article"
-				:to="article.path"
-				:use-updated="sortOrder === 'updated'"
-				:style="getFixedDelay(index * 0.05)"
-			/>
-		</TransitionGroup>
-
-		<ZPagination v-model="page" sticky :total-pages="totalPages" />
+		<PostOrderToggle
+			v-model:is-ascending="isAscending"
+			v-model:sort-order="sortOrder"
+			v-model:category="category"
+			:categories
+		/>
 	</div>
-</UtilHydrateSafe>
+
+	<TransitionGroup v-if="listPaged.length" tag="menu" class="proper-height" name="float-in">
+		<PostArticle
+			v-for="article, index in listPaged"
+			:key="article.path"
+			v-bind="article"
+			:eager-image="index < 2"
+			:to="article.path"
+			:use-updated="sortOrder === 'updated'"
+			:style="getFixedDelay(index * 0.05)"
+		/>
+	</TransitionGroup>
+
+	<p v-else class="post-empty">
+		暂无文章
+	</p>
+
+	<ZPagination v-model="page" sticky :total-pages="totalPages" />
+</div>
 </template>
 
 <style lang="scss" scoped>
@@ -91,5 +96,11 @@ const listRecommended = computed(() => sort(
 
 .post-list {
 	margin: 1rem;
+}
+
+.post-empty {
+	margin: 20vh 0;
+	color: var(--c-text-3);
+	text-align: center;
 }
 </style>
