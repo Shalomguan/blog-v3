@@ -41,6 +41,8 @@ const contentType = ref<ContentType>('post')
 const editorView = ref<EditorView>('write')
 const files = ref<AdminFileItem[]>([])
 const selectedPath = ref('')
+// 当前编辑文件在 GitHub 上的版本，保存时回传用于乐观锁，避免覆盖他处改动
+const selectedSha = ref('')
 const loadingList = ref(false)
 const loadingFile = ref(false)
 const saving = ref(false)
@@ -70,18 +72,21 @@ const articleTypes = computed(() => Object.keys(appConfig.article.types))
 const isEditing = computed(() => Boolean(selectedPath.value))
 const visibleFiles = computed(() => files.value)
 const editorTitle = computed(() => {
-	if (selectedPath.value) return selectedPath.value
+	if (selectedPath.value)
+		return selectedPath.value
 	return contentType.value === 'post' ? '新建文章' : '新建说说'
 })
 
 watch(contentType, async () => {
 	resetEditor(contentType.value)
-	if (session.authenticated) await loadList()
+	if (session.authenticated)
+		await loadList()
 })
 
 onMounted(async () => {
 	await refreshSession()
-	if (session.authenticated) await loadList()
+	if (session.authenticated)
+		await loadList()
 })
 
 function pad(value: number): string {
@@ -110,15 +115,19 @@ function splitList(value: string): string[] {
 }
 
 function joinList(value: unknown): string {
-	if (Array.isArray(value)) return value.map(String).join(', ')
-	if (typeof value === 'string') return value
+	if (Array.isArray(value))
+		return value.map(String).join(', ')
+	if (typeof value === 'string')
+		return value
 	return ''
 }
 
 function getFieldString(frontmatter: Record<string, unknown>, key: string): string {
 	const value = frontmatter[key]
-	if (typeof value === 'boolean') return value.toString()
-	if (value === undefined || value === null) return ''
+	if (typeof value === 'boolean')
+		return value.toString()
+	if (value === undefined || value === null)
+		return ''
 	return String(value)
 }
 
@@ -186,6 +195,7 @@ async function loadList(): Promise<void> {
 
 function resetEditor(type: ContentType): void {
 	selectedPath.value = ''
+	selectedSha.value = ''
 	editorView.value = 'write'
 	form.title = ''
 	form.description = ''
@@ -216,6 +226,7 @@ async function loadFile(item: AdminFileItem): Promise<void> {
 		})
 
 		selectedPath.value = response.path
+		selectedSha.value = response.sha
 		contentType.value = response.path.startsWith('content/talks/') ? 'talk' : 'post'
 		applyFrontmatter(response.frontmatter)
 		form.body = response.body
@@ -267,6 +278,7 @@ function createPayload() {
 				updated: form.updated,
 			},
 			path: selectedPath.value || undefined,
+			sha: selectedSha.value || undefined,
 			type: contentType.value,
 		}
 	}
@@ -288,6 +300,7 @@ function createPayload() {
 			},
 		},
 		path: selectedPath.value || undefined,
+		sha: selectedSha.value || undefined,
 		type: contentType.value,
 	}
 }
@@ -303,6 +316,7 @@ async function saveContent(): Promise<void> {
 			body: createPayload(),
 		})
 		selectedPath.value = response.path
+		selectedSha.value = response.sha
 		statusMessage.value = response.created ? `已创建 ${response.path}` : `已更新 ${response.path}`
 		await loadList()
 	}
@@ -322,7 +336,7 @@ async function saveContent(): Promise<void> {
 			<h1>内容后台</h1>
 			<p>文章和说说会通过 GitHub API 提交到仓库，然后由 Cloudflare Pages 重新构建。</p>
 		</div>
-		<button v-if="session.authenticated" class="icon-button" type="button" v-tip="'退出登录'" @click="logout">
+		<button v-if="session.authenticated" v-tip="'退出登录'" class="icon-button" type="button" @click="logout">
 			<Icon name="ph:sign-out-bold" />
 		</button>
 	</header>
@@ -357,7 +371,7 @@ async function saveContent(): Promise<void> {
 						说说
 					</button>
 				</div>
-				<button class="icon-button" type="button" v-tip="'刷新列表'" :disabled="loadingList" @click="loadList">
+				<button v-tip="'刷新列表'" class="icon-button" type="button" :disabled="loadingList" @click="loadList">
 					<Icon name="ph:arrows-clockwise-bold" />
 				</button>
 			</div>

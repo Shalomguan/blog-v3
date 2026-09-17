@@ -83,8 +83,8 @@ async function githubRequest<T>(
 		return await $fetch<T>(url, {
 			...options,
 			headers: {
-				Accept: 'application/vnd.github+json',
-				Authorization: `Bearer ${config.token}`,
+				'Accept': 'application/vnd.github+json',
+				'Authorization': `Bearer ${config.token}`,
 				'User-Agent': userAgent,
 				'X-GitHub-Api-Version': '2022-11-28',
 				...options.headers,
@@ -116,7 +116,8 @@ async function githubRequestNullable<T>(
 	catch (error) {
 		const statusCode = (error as { statusCode?: number, status?: number }).statusCode
 			?? (error as { status?: number }).status
-		if (statusCode === 404) return null
+		if (statusCode === 404)
+			return null
 		throw error
 	}
 }
@@ -166,7 +167,8 @@ export async function readGitHubMarkdownFile(event: H3Event, path: string): Prom
 		`/contents/${encodePath(path)}?ref=${encodeURIComponent(branch)}`,
 	)
 
-	if (!file) return null
+	if (!file)
+		return null
 	if (file.type !== 'file' || file.encoding !== 'base64' || !file.content) {
 		throw createError({ statusCode: 502, statusMessage: 'GitHub returned an unsupported content response' })
 	}
@@ -183,9 +185,26 @@ export async function writeGitHubMarkdownFile(
 	path: string,
 	content: string,
 	message: string,
+	expectedSha?: string,
 ): Promise<{ path: string, sha: string }> {
 	const { branch } = getGitHubConfig(event)
 	const existing = await readGitHubMarkdownFile(event, path)
+
+	// 乐观锁：调用方基于某个版本编辑时，若仓库中该文件已被他处修改，
+	// 拒绝写入而不是静默覆盖对方的改动
+	if (expectedSha && existing && existing.sha !== expectedSha) {
+		throw createError({
+			statusCode: 409,
+			statusMessage: 'File has been modified elsewhere, please reload before saving',
+		})
+	}
+	if (expectedSha && !existing) {
+		throw createError({
+			statusCode: 409,
+			statusMessage: 'File has been deleted elsewhere, please reload before saving',
+		})
+	}
+
 	const response = await githubRequest<GitHubContentResponse>(
 		event,
 		`/contents/${encodePath(path)}`,
@@ -207,7 +226,8 @@ export async function writeGitHubMarkdownFile(
 }
 
 export async function ensureUniqueGitHubPath(event: H3Event, path: string): Promise<string> {
-	if (!await readGitHubMarkdownFile(event, path)) return path
+	if (!await readGitHubMarkdownFile(event, path))
+		return path
 
 	const extensionIndex = path.lastIndexOf('.md')
 	const base = path.slice(0, extensionIndex)
@@ -215,7 +235,8 @@ export async function ensureUniqueGitHubPath(event: H3Event, path: string): Prom
 
 	for (let suffix = 2; suffix < 100; suffix++) {
 		const nextPath = `${base}-${suffix}${extension}`
-		if (!await readGitHubMarkdownFile(event, nextPath)) return nextPath
+		if (!await readGitHubMarkdownFile(event, nextPath))
+			return nextPath
 	}
 
 	throw createError({ statusCode: 409, statusMessage: 'Could not generate a unique file path' })

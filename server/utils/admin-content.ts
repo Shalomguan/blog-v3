@@ -3,6 +3,66 @@ import blogConfig from '../../blog.config'
 
 type ContentKind = 'post' | 'talk'
 
+const articleTypes = Object.keys(blogConfig.article.types)
+const talkVideoTypes = ['raw', 'bilibili', 'bilibili-nano', 'youtube', 'douyin', 'douyin-wide', 'tiktok']
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?$/
+
+/**
+ * 落库前的服务端校验：与 content.config.ts 的 collection schema 保持一致。
+ *
+ * 若写入非法 frontmatter，@nuxt/content 会在构建时校验失败导致整站无法发布，
+ * 因此必须在写入前拦下，而不是等 CI 构建报错。
+ */
+function assertPostFields(fields: Record<string, unknown>): void {
+	const type = String(fields.type ?? '')
+	if (type && !articleTypes.includes(type)) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: `Invalid article type "${type}", expected one of: ${articleTypes.join(', ')}`,
+		})
+	}
+
+	for (const key of ['date', 'updated'] as const) {
+		const value = String(fields[key] ?? '')
+		if (value && !ISO_DATE.test(value)) {
+			throw createError({
+				statusCode: 400,
+				statusMessage: `Invalid ${key} "${value}", expected format YYYY-MM-DD or YYYY-MM-DD HH:mm`,
+			})
+		}
+	}
+
+	const image = String(fields.image ?? '')
+	if (image && !/^(?:https?:\/\/|\/)/.test(image)) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: 'Article image must be an absolute URL or a site-relative path',
+		})
+	}
+}
+
+function assertTalkFields(fields: Record<string, unknown>): void {
+	const date = String(fields.date ?? '')
+	if (date && !ISO_DATE.test(date)) {
+		throw createError({
+			statusCode: 400,
+			statusMessage: `Invalid date "${date}", expected format YYYY-MM-DD or YYYY-MM-DD HH:mm`,
+		})
+	}
+
+	const video = fields.video
+	if (video && typeof video === 'object' && !Array.isArray(video)) {
+		const videoType = String((video as Record<string, unknown>).type ?? '')
+		if (videoType && !talkVideoTypes.includes(videoType)) {
+			throw createError({
+				statusCode: 400,
+				statusMessage: `Invalid video type "${videoType}", expected one of: ${talkVideoTypes.join(', ')}`,
+			})
+		}
+	}
+}
+
 export interface ParsedMarkdownFile {
 	body: string
 	frontmatter: Record<string, unknown>
@@ -12,6 +72,7 @@ interface SaveContentPayload {
 	body?: string
 	fields?: Record<string, unknown>
 	path?: string
+	sha?: string
 	type?: ContentKind
 }
 
@@ -41,20 +102,25 @@ function toStringArray(value: unknown): string[] {
 }
 
 function toVideoValue(value: unknown): Record<string, unknown> | undefined {
-	if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+	if (!value || typeof value !== 'object' || Array.isArray(value))
+		return undefined
 
 	const raw = value as Record<string, unknown>
 	const id = toStringValue(raw.id)
-	if (!id) return undefined
+	if (!id)
+		return undefined
 
 	const video: Record<string, unknown> = { id }
 	const type = toStringValue(raw.type)
 	const ratio = toStringValue(raw.ratio)
 	const poster = toStringValue(raw.poster)
 
-	if (type) video.type = type
-	if (ratio) video.ratio = Number.isFinite(Number(ratio)) ? Number(ratio) : ratio
-	if (poster) video.poster = poster
+	if (type)
+		video.type = type
+	if (ratio)
+		video.ratio = Number.isFinite(Number(ratio)) ? Number(ratio) : ratio
+	if (poster)
+		video.poster = poster
 
 	return video
 }
@@ -79,33 +145,37 @@ function getTalkSlugFromDate(date: string): string {
 	const slug = date
 		.trim()
 		.slice(0, 16)
-		.replace(/[^\d]+/g, '-')
+		.replace(/\D+/g, '-')
 		.replace(/^-|-$/g, '')
 
-	return slug || new Date().toISOString().slice(0, 16).replace(/[^\d]+/g, '-')
+	return slug || new Date().toISOString().slice(0, 16).replace(/\D+/g, '-')
 }
 
 function yamlScalar(value: unknown): string {
-	if (typeof value === 'boolean' || typeof value === 'number') return String(value)
+	if (typeof value === 'boolean' || typeof value === 'number')
+		return String(value)
 	return JSON.stringify(String(value))
 }
 
 function yamlValue(key: string, value: unknown): string[] {
 	if (Array.isArray(value)) {
-		if (!value.length) return []
+		if (!value.length)
+			return []
 		return [`${key}: [${value.map(yamlScalar).join(', ')}]`]
 	}
 
 	if (value && typeof value === 'object') {
 		const lines = [`${key}:`]
 		for (const [childKey, childValue] of Object.entries(value)) {
-			if (childValue === undefined || childValue === null || childValue === '') continue
+			if (childValue === undefined || childValue === null || childValue === '')
+				continue
 			lines.push(`  ${childKey}: ${yamlScalar(childValue)}`)
 		}
 		return lines.length > 1 ? lines : []
 	}
 
-	if (value === undefined || value === null || value === '') return []
+	if (value === undefined || value === null || value === '')
+		return []
 	return [`${key}: ${yamlScalar(value)}`]
 }
 
@@ -121,10 +191,14 @@ function normalizePostFields(fields: Record<string, unknown>): Record<string, un
 	const categories = toStringArray(fields.categories)
 	const tags = toStringArray(fields.tags)
 
-	if (!title) throw createError({ statusCode: 400, statusMessage: 'Article title is required' })
-	if (!date) throw createError({ statusCode: 400, statusMessage: 'Article date is required' })
-	if (!categories.length) categories.push(blogConfig.defaultCategory)
-	if (!tags.length) throw createError({ statusCode: 400, statusMessage: 'Article tags are required' })
+	if (!title)
+		throw createError({ statusCode: 400, statusMessage: 'Article title is required' })
+	if (!date)
+		throw createError({ statusCode: 400, statusMessage: 'Article date is required' })
+	if (!categories.length)
+		categories.push(blogConfig.defaultCategory)
+	if (!tags.length)
+		throw createError({ statusCode: 400, statusMessage: 'Article tags are required' })
 
 	return {
 		title,
@@ -141,7 +215,8 @@ function normalizePostFields(fields: Record<string, unknown>): Record<string, un
 
 function normalizeTalkFields(fields: Record<string, unknown>): Record<string, unknown> {
 	const date = toStringValue(fields.date)
-	if (!date) throw createError({ statusCode: 400, statusMessage: 'Talk date is required' })
+	if (!date)
+		throw createError({ statusCode: 400, statusMessage: 'Talk date is required' })
 
 	return {
 		title: toStringValue(fields.title) || undefined,
@@ -160,7 +235,8 @@ export function parseMarkdownFile(content: string): ParsedMarkdownFile {
 	}
 
 	const endIndex = content.indexOf('\n---', 4)
-	if (endIndex < 0) return { body: content, frontmatter: {} }
+	if (endIndex < 0)
+		return { body: content, frontmatter: {} }
 
 	const frontmatterRaw = content.slice(4, endIndex).trim()
 	const body = content.slice(endIndex + 4).replace(/^\r?\n/, '')
@@ -169,8 +245,9 @@ export function parseMarkdownFile(content: string): ParsedMarkdownFile {
 
 	for (let index = 0; index < lines.length; index++) {
 		const line = lines[index]
-		const match = line.match(/^([A-Za-z][\w-]*):\s*(.*)$/)
-		if (!match) continue
+		const match = line.match(/^([A-Z][\w-]*):\s*(.*)$/i)
+		if (!match)
+			continue
 
 		const [, key, rawValue] = match
 		if (rawValue === '') {
@@ -180,10 +257,12 @@ export function parseMarkdownFile(content: string): ParsedMarkdownFile {
 			while (lines[index + 1]?.startsWith('  ')) {
 				const childLine = lines[++index].trim()
 				const arrayMatch = childLine.match(/^-\s*(.*)$/)
-				const objectMatch = childLine.match(/^([A-Za-z][\w-]*):\s*(.*)$/)
+				const objectMatch = childLine.match(/^([A-Z][\w-]*):\s*(.*)$/i)
 
-				if (arrayMatch) arrayValue.push(stripYamlScalar(arrayMatch[1]))
-				else if (objectMatch) objectValue[objectMatch[1]] = stripYamlScalar(objectMatch[2])
+				if (arrayMatch)
+					arrayValue.push(stripYamlScalar(arrayMatch[1]))
+				else if (objectMatch)
+					objectValue[objectMatch[1]] = stripYamlScalar(objectMatch[2])
 			}
 
 			frontmatter[key] = arrayValue.length ? arrayValue : objectValue
@@ -198,11 +277,14 @@ export function parseMarkdownFile(content: string): ParsedMarkdownFile {
 
 function parseYamlScalar(raw: string): unknown {
 	const value = raw.trim()
-	if (value === 'true') return true
-	if (value === 'false') return false
+	if (value === 'true')
+		return true
+	if (value === 'false')
+		return false
 	if (value.startsWith('[') && value.endsWith(']')) {
 		const inner = value.slice(1, -1).trim()
-		if (!inner) return []
+		if (!inner)
+			return []
 		return inner
 			.split(',')
 			.map(item => stripYamlScalar(item))
@@ -226,6 +308,7 @@ export function normalizeSavePayload(payload: SaveContentPayload): {
 	body: string
 	frontmatter: Record<string, unknown>
 	path: string | undefined
+	sha: string | undefined
 	type: ContentKind
 } {
 	const type = payload.type
@@ -233,12 +316,18 @@ export function normalizeSavePayload(payload: SaveContentPayload): {
 		throw createError({ statusCode: 400, statusMessage: 'Content type must be post or talk' })
 	}
 
+	if (type === 'post')
+		assertPostFields(payload.fields || {})
+	else
+		assertTalkFields(payload.fields || {})
+
 	return {
 		body: toStringValue(payload.body),
 		frontmatter: type === 'post'
 			? normalizePostFields(payload.fields || {})
 			: normalizeTalkFields(payload.fields || {}),
 		path: toStringValue(payload.path) || undefined,
+		sha: toStringValue(payload.sha) || undefined,
 		type,
 	}
 }

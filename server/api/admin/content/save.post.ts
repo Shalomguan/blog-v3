@@ -1,11 +1,11 @@
 import { readBody } from 'h3'
+import { requireAdminSession } from '../../../utils/admin-auth'
 import {
 	assertManagedPath,
 	buildManagedMarkdown,
 	deriveManagedPath,
 	normalizeSavePayload,
 } from '../../../utils/admin-content'
-import { requireAdminSession } from '../../../utils/admin-auth'
 import { ensureUniqueGitHubPath, writeGitHubMarkdownFile } from '../../../utils/admin-github'
 
 export default defineEventHandler(async (event) => {
@@ -28,6 +28,8 @@ export default defineEventHandler(async (event) => {
 		path,
 		content,
 		`admin: ${action} ${payload.type} ${title}`,
+		// 仅在更新已存在文件时校验版本，新建文件无需乐观锁
+		isUpdate ? payload.sha : undefined,
 	)
 
 	return {

@@ -61,7 +61,8 @@ async function hmacSha256Hex(input: string, secret: string): Promise<string> {
 }
 
 export function constantTimeEqual(left: string, right: string): boolean {
-	if (left.length !== right.length) return false
+	if (left.length !== right.length)
+		return false
 
 	let diff = 0
 	for (let index = 0; index < left.length; index++) {
@@ -89,26 +90,76 @@ export async function createAdminSession(event: H3Event): Promise<void> {
 	})
 }
 
+/**
+ * 已吊销会话签名 -> 过期时刻。
+ *
+ * 与限流同样保存在 Worker 实例内存中：能覆盖同一实例上的登出，
+ * 但 isolate 回收或多个实例并存时无法保证全局立即失效。
+ * 需要强一致吊销时应改用 D1/KV 存储，或轮换 ADMIN_SESSION_SECRET。
+ */
+const revokedSessions = new Map<string, number>()
+const MAX_REVOKED_SESSIONS = 1000
+
+function pruneRevokedSessions(): void {
+	const now = Date.now()
+	for (const [signature, expiresAt] of revokedSessions) {
+		if (expiresAt <= now)
+			revokedSessions.delete(signature)
+	}
+
+	// 防止异常情况下无限增长
+	if (revokedSessions.size > MAX_REVOKED_SESSIONS) {
+		const overflow = revokedSessions.size - MAX_REVOKED_SESSIONS
+		let removed = 0
+		for (const signature of revokedSessions.keys()) {
+			revokedSessions.delete(signature)
+			if (++removed >= overflow)
+				break
+		}
+	}
+}
+
 export function clearAdminSession(event: H3Event): void {
+	// 会话是无状态 HMAC，仅删除 cookie 无法让已泄露的凭证失效，
+	// 因此同时把该签名加入吊销集合
+	const cookie = getCookie(event, ADMIN_COOKIE)
+	const signature = cookie?.split('.')[1]
+	if (signature) {
+		revokedSessions.set(signature, Date.now() + SESSION_MAX_AGE * 1000)
+		pruneRevokedSessions()
+	}
+
 	deleteCookie(event, ADMIN_COOKIE, { path: '/' })
 }
 
 export async function verifyAdminSession(event: H3Event): Promise<boolean> {
 	const secret = getAdminEnv(event, 'adminSessionSecret')
 	const cookie = getCookie(event, ADMIN_COOKIE)
-	if (!secret || !cookie) return false
+	if (!secret || !cookie)
+		return false
 
 	const [issuedAt, signature] = cookie.split('.')
 	const issuedAtNumber = Number(issuedAt)
-	if (!issuedAt || !signature || !Number.isFinite(issuedAtNumber)) return false
-	if (Date.now() - issuedAtNumber > SESSION_MAX_AGE * 1000) return false
+	if (!issuedAt || !signature || !Number.isFinite(issuedAtNumber))
+		return false
+	if (Date.now() - issuedAtNumber > SESSION_MAX_AGE * 1000)
+		return false
+
+	// 已登出的会话即使签名有效也不予通过
+	const revokedAt = revokedSessions.get(signature)
+	if (revokedAt !== undefined) {
+		if (revokedAt > Date.now())
+			return false
+		revokedSessions.delete(signature)
+	}
 
 	const expected = await hmacSha256Hex(issuedAt, secret)
 	return constantTimeEqual(signature, expected)
 }
 
 export async function requireAdminSession(event: H3Event): Promise<void> {
-	if (await verifyAdminSession(event)) return
+	if (await verifyAdminSession(event))
+		return
 
 	throw createError({ statusCode: 401, statusMessage: 'Admin login required' })
 }
