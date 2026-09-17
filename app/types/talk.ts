@@ -1,13 +1,13 @@
 import type { PageCollectionItemBase } from '@nuxt/content'
 
-export type TalkVideo = {
+export interface TalkVideo {
 	type?: 'raw' | 'bilibili' | 'bilibili-nano' | 'youtube' | 'douyin' | 'douyin-wide' | 'tiktok'
 	id: string
 	ratio?: string | number
 	poster?: string
 }
 
-export type TalkItem = {
+export interface TalkItem {
 	text?: string
 	date: string
 	images?: string[]

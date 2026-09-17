@@ -1,4 +1,4 @@
-import { requireAdminSession, getAdminEnv } from '../../utils/admin-auth'
+import { getAdminEnv, requireAdminSession } from '../../utils/admin-auth'
 
 interface GitHubCheckResult {
 	message?: string
@@ -12,8 +12,8 @@ async function checkGitHubUrl(url: string, token: string): Promise<GitHubCheckRe
 	try {
 		const response = await fetch(url, {
 			headers: {
-				Accept: 'application/vnd.github+json',
-				Authorization: `Bearer ${token}`,
+				'Accept': 'application/vnd.github+json',
+				'Authorization': `Bearer ${token}`,
 				'User-Agent': 'blog-v3-admin-check',
 				'X-GitHub-Api-Version': '2022-11-28',
 			},

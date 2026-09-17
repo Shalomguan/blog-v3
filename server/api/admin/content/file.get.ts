@@ -1,6 +1,6 @@
 import { createError, getQuery } from 'h3'
-import { assertManagedPath, parseMarkdownFile } from '../../../utils/admin-content'
 import { requireAdminSession } from '../../../utils/admin-auth'
+import { assertManagedPath, parseMarkdownFile } from '../../../utils/admin-content'
 import { readGitHubMarkdownFile } from '../../../utils/admin-github'
 
 export default defineEventHandler(async (event) => {

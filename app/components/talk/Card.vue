@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { toDate } from 'date-fns-tz'
 import type { TalkContentItem } from '~/types/talk'
+import { toDate } from 'date-fns-tz'
 
 const props = defineProps<{
 	eagerMedia?: boolean
@@ -73,8 +73,8 @@ const replyContent = computed(() => props.talk.description || props.talk.title |
 
 			<ZRawLink
 				v-if="talk.location"
-				class="location"
 				v-tip="`搜索: ${talk.location}`"
+				class="location"
 				:to="`https://bing.com/maps?q=${encodeURIComponent(talk.location)}`"
 			>
 				<Icon name="ph:map-pin-bold" />
@@ -83,9 +83,9 @@ const replyContent = computed(() => props.talk.description || props.talk.title |
 		</div>
 
 		<button
+			v-tip="'评论'"
 			class="comment-btn"
 			type="button"
-			v-tip="'评论'"
 			@click="emit('reply', replyContent)"
 		>
 			<Icon name="ph:chats-bold" />
