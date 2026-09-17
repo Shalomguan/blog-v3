@@ -36,8 +36,8 @@ export function useTocAutoHighlight(toc: MaybeRefOrGetter<TocLink[]>) {
 		activeTocItem.value = currentItem?.id || null
 
 		// 滚动到当前 item
-		const scrollContainer = document.querySelector('#z-aside')
-		const activeElement = document.querySelector(`#z-aside a[href="#${activeTocItem.value}"]`) as HTMLElement | null
+		const scrollContainer = document.querySelector('#blog-aside')
+		const activeElement = document.querySelector(`#blog-aside a[href="#${activeTocItem.value}"]`) as HTMLElement | null
 		// scrollIntoView 触发目录滚动时导致文章持续缓慢滚动并打断正常滚动
 		scrollContainer?.scroll({ top: activeElement?.offsetTop || 0 })
 	}

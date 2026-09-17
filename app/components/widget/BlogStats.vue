@@ -16,7 +16,8 @@ const yearlyTip = computed(() => {
 
 const blogStats = [{
 	label: '运营时长',
-	value: timeElapse(appConfig.timeEstablished),
+	// 以构建时间而非访问时刻为准：预渲染与客户端水合会得到相同字符串，避免水合不一致
+	value: timeElapse(appConfig.timeEstablished, 2, runtimeConfig.public.buildTime),
 	tip: `博客于${appConfig.timeEstablished}上线`,
 }, {
 	label: '上次更新',

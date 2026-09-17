@@ -9,10 +9,14 @@ const excerpt = ref(props.excerpt)
 const caret = ref('')
 
 if (appConfig.component.excerpt?.animation !== false) {
-	// onBeforeMount(() => {
-	excerpt.value = ''
-	// })
 	onMounted(async () => {
+		// 尊重用户的减少动态效果偏好
+		if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+			return
+
+		// 此处才清空：预渲染与首屏 HTML 保留完整摘要，避免服务端输出空内容
+		// 打字机播放期间高度由 .excerpt-sizer 占位固定，因此正文不会被持续下推
+		excerpt.value = ''
 		caret.value = appConfig.component.excerpt?.caret ?? '_'
 		for (const char of props.excerpt) {
 			excerpt.value += char
@@ -31,7 +35,12 @@ if (import.meta.dev) {
 
 <template>
 <div class="md-excerpt gradient-card">
-	<Icon name="ph:highlighter-bold" />{{ excerpt }}{{ caret }}
+	<Icon name="ph:highlighter-bold" />
+	<span class="excerpt-body">
+		<!-- 用完整摘要占位撑起高度，使打字机播放时容器尺寸不变 -->
+		<span class="excerpt-sizer" aria-hidden="true">{{ props.excerpt }}</span>
+		<span class="excerpt-live">{{ excerpt }}{{ caret }}</span>
+	</span>
 </div>
 </template>
 
@@ -56,5 +65,22 @@ if (import.meta.dev) {
 	&:hover {
 		color: currentcolor;
 	}
+}
+
+.excerpt-body {
+	position: relative;
+	display: inline;
+}
+
+// 不可见但参与布局，负责固定容器高度
+.excerpt-sizer {
+	visibility: hidden;
+}
+
+// 覆盖在占位文本之上，逐字显示时不会改变容器高度
+.excerpt-live {
+	position: absolute;
+	inset-block-start: 0;
+	inset-inline-start: 0;
 }
 </style>

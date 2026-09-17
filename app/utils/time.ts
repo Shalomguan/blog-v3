@@ -41,9 +41,15 @@ const timeIntervals = [
 	{ label: '秒', threshold: 1000 },
 ]
 
-export function timeElapse(date: Date | string, maxDepth = 2) {
+/**
+ * 计算距今的时间跨度。
+ *
+ * `base` 用于在预渲染与客户端之间固定同一参照时刻，避免服务端（构建时）与客户端（访问时）
+ * 结果不同导致水合不一致；需要相对访问时刻计算时省略该参数。
+ */
+export function timeElapse(date: Date | string, maxDepth = 2, base?: Date | string) {
 	let timeString = ''
-	let msecRemained = differenceInMilliseconds(Date.now(), date)
+	let msecRemained = differenceInMilliseconds(base ?? Date.now(), date)
 	for (const interval of timeIntervals) {
 		const count = Math.floor(msecRemained / interval.threshold)
 		if (count <= 0)

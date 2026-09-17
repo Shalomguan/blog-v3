@@ -1,12 +1,55 @@
 <script setup lang="ts">
 const appConfig = useAppConfig()
 
-onMounted(() => {
-	window.twikoo?.init?.({
-		envId: appConfig.twikoo?.envId,
-		// twikoo 会把挂载后的元素变为 #twikoo
-		el: '#twikoo',
+const failed = ref(false)
+
+/**
+ * twikoo 通过 <head> 中的外链脚本异步加载，
+ * onMounted 时可能尚未就绪，或被广告拦截/网络问题阻断。
+ * 因此轮询等待并设置超时，避免评论框永久停留在「评论加载中...」。
+ */
+const TWIKOO_READY_TIMEOUT = 10_000
+const TWIKOO_READY_INTERVAL = 200
+
+function waitForTwikoo(): Promise<boolean> {
+	if (typeof window === 'undefined')
+		return Promise.resolve(false)
+	if (window.twikoo?.init)
+		return Promise.resolve(true)
+
+	return new Promise((resolve) => {
+		const startedAt = Date.now()
+		const timer = window.setInterval(() => {
+			if (window.twikoo?.init) {
+				window.clearInterval(timer)
+				resolve(true)
+				return
+			}
+			if (Date.now() - startedAt >= TWIKOO_READY_TIMEOUT) {
+				window.clearInterval(timer)
+				resolve(false)
+			}
+		}, TWIKOO_READY_INTERVAL)
+		onScopeDispose(() => window.clearInterval(timer))
 	})
+}
+
+onMounted(async () => {
+	if (!await waitForTwikoo()) {
+		failed.value = true
+		return
+	}
+
+	try {
+		await window.twikoo?.init?.({
+			envId: appConfig.twikoo?.envId,
+			// twikoo 会把挂载后的元素变为 #twikoo
+			el: '#twikoo',
+		})
+	}
+	catch {
+		failed.value = true
+	}
 })
 </script>
 
@@ -16,7 +59,12 @@ onMounted(() => {
 		评论区
 	</h3>
 	<div id="twikoo">
-		<p>评论加载中...</p>
+		<p v-if="failed" class="comment-fallback">
+			评论加载失败，可能是评论服务暂时不可用或浏览器插件拦截了脚本，请刷新重试。
+		</p>
+		<p v-else>
+			评论加载中...
+		</p>
 	</div>
 </section>
 </template>

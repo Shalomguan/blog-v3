@@ -9,21 +9,15 @@ useSeoMeta({
 
 onMounted(() => {
 	// fetchTotalStats()
-})//待完善
+})// 待完善
 
-const layoutStore = useLayoutStore()//管理布局状态
-layoutStore.setAside([])//不显示侧边栏
+const layoutStore = useLayoutStore()// 管理布局状态
+layoutStore.setAside([])// 不显示侧边栏
 
 const birthYear = appConfig.component.stats.birthYear
 const age = new Date().getFullYear() - birthYear
 
 // 添加更多个人信息
-const skills = [
-	{ name: '前端开发', level: 90 },
-	{ name: '后端开发', level: 75 },
-	{ name: '项目管理', level: 70 },
-]
-
 const hobbies = [
 	{ name: '阅读', icon: 'ph:book-bold' },
 	{ name: '音乐', icon: 'ph:music-note-bold' },
@@ -45,7 +39,6 @@ const hobbies = [
 			</div>
 		</div>
 	</header>
-	// 个人信息卡片
 	<div class="cards-grid">
 		<div class="card intro-card">
 			<p>你好, 很高兴认识你</p>
@@ -107,16 +100,22 @@ const hobbies = [
 		<div class="card contact-card">
 			<span class="label">联系我</span>
 			<div class="contact-links">
-				<a href="https://github.com/Shalomguan" target="_blank" rel="noopener noreferrer"
-					title="GitHub:LuoH-AN">
+				<a
+					href="https://github.com/Shalomguan" target="_blank" rel="noopener noreferrer"
+					title="GitHub:LuoH-AN"
+				>
 					<Icon name="ph:github-logo-fill" />
 				</a>
-				<a href="mailto:qutypebeat@gmail.com" target="_blank" rel="noopener noreferrer"
-					title="Email:qutypebeat@gmail.com">
+				<a
+					href="mailto:qutypebeat@gmail.com" target="_blank" rel="noopener noreferrer"
+					title="Email:qutypebeat@gmail.com"
+				>
 					<Icon name="ph:envelope-simple-fill" />
 				</a>
-				<a href="https://qm.qq.com/q/9sljinl6rC" target="_blank" rel="noopener noreferrer"
-					title="QQ:202979538">
+				<a
+					href="https://qm.qq.com/q/9sljinl6rC" target="_blank" rel="noopener noreferrer"
+					title="QQ:202979538"
+				>
 					<Icon name="ri:qq-fill" />
 				</a>
 			</div>
