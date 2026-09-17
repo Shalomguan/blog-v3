@@ -8,9 +8,12 @@ import { alphabetical } from 'radash'
  * @see https://github.com/nuxt/nuxt/issues/14736
  * @todo 支持分页/分类筛选
  */
-export function useArticleIndexOptions(path = 'posts/%') {
-	return queryCollection('content')
+export function useArticleIndexOptions(path = 'posts/%', options?: { includeDrafts?: boolean }) {
+	const query = queryCollection('content')
 		.where('stem', 'LIKE', path)
+
+	// 未标记 draft 的文章才对外展示，`draft: true` 的草稿不应出现在首页/归档/订阅源
+	return (options?.includeDrafts ? query : query.where('draft', '=', false))
 		.select('categories', 'date', 'description', 'image', 'path', 'readingTime', 'recommend', 'title', 'type', 'updated')
 		.all()
 }

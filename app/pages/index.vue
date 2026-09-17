@@ -10,7 +10,14 @@ useSeoMeta({
 const layoutStore = useLayoutStore()
 layoutStore.setAside(['blog-stats', 'blog-tech', 'comm-group'])
 
-const { data: listRaw } = await useAsyncData('index_posts', () => useArticleIndexOptions(), { default: () => [] })
+// Cloudflare Pages 未绑定 D1 时服务端内容查询会 500，文章列表会静默为空。
+// 这里临时改为仅客户端查询（走静态 sql_dump.txt），配好 D1 后应改回 useAsyncData。
+const { data: listData, error: listError, status: listStatus } = useLazyAsyncData(
+	'index_posts',
+	() => useArticleIndexOptions(),
+	{ server: false },
+)
+const listRaw = computed(() => listData.value ?? [])
 const { listSorted, isAscending, sortOrder } = useArticleSort(listRaw, { bindDirectionQuery: 'asc', bindOrderQuery: 'sort' })
 const { category, categories, listCategorized } = useCategory(listSorted, { bindQuery: 'category' })
 const { page, totalPages, listPaged } = usePagination(listCategorized, { bindQuery: 'page' })
@@ -64,6 +71,14 @@ const listRecommended = computed(() => sort(
 			:style="getFixedDelay(index * 0.05)"
 		/>
 	</TransitionGroup>
+
+	<p v-else-if="listError" class="post-empty">
+		文章加载失败：{{ listError.message }}
+	</p>
+
+	<p v-else-if="listStatus !== 'success'" class="post-empty">
+		加载中…
+	</p>
 
 	<p v-else class="post-empty">
 		暂无文章
