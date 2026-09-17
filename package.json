@@ -20,7 +20,10 @@
     "preview": "nuxt preview",
     "bump": "pnpx taze -w && rimraf pnpm-lock.yaml && pnpm i",
     "lint": "stylelint '**/*.{vue,scss}'",
+    "lint:eslint": "eslint .",
     "lint:fix": "eslint --fix && stylelint '**/*.{vue,scss}' --fix",
+    "typecheck": "nuxt typecheck",
+    "verify": "pnpm lint:eslint && pnpm lint && pnpm typecheck",
     "init-project": "tsx scripts/init-project",
     "new": "tsx scripts/new-blog",
     "check:feed": "tsx scripts/framework/get-feed",
@@ -84,6 +87,7 @@
     "stylelint": "catalog:quality",
     "tsx": "catalog:framework",
     "typescript": "catalog:framework",
-    "unplugin-yaml": "catalog:framework"
+    "unplugin-yaml": "catalog:framework",
+    "vue-tsc": "catalog:framework"
   }
 }

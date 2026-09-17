@@ -27,6 +27,7 @@ catalogs:
     unplugin-yaml: ^3.0.7
     vue: ^3.5.25
     vue-router: ^4.6.3
+    vue-tsc: ^3.3.11
   quality:
     '@antfu/eslint-config': ^6.2.0
     '@nuxt/hints': ^1.0.0-alpha.2
@@ -77,6 +78,8 @@ onlyBuiltDependencies:
   - sharp
   - unrs-resolver
 
+# 补丁直接修改依赖的 dist 产物且无版本约束，升级这些包会导致 pnpm i 失败。
+# taze.config.ts 已将其排除；如需升级，请同步重建对应补丁。
 patchedDependencies:
   '@nuxtjs/mdc': patches/@nuxtjs__mdc.patch
   '@vue/shared': patches/@vue__shared.patch

@@ -6,6 +6,14 @@ import blogConfig from './blog.config'
 import packageJson from './package.json'
 import redirectList from './redirects.json'
 
+// EdgeOne 构建环境通过 TENCENTCLOUD_RUNENV=SCF 标识（见下方 runtimeConfig.public.ci）
+const IS_EDGEONE = env.TENCENTCLOUD_RUNENV === 'SCF'
+// 这些平台均以非子目录形式输出路由，需要关闭 autoSubfolderIndex 以避免尾斜杠 404
+const USE_FLAT_ROUTES = Boolean(CLOUDFLARE_PAGES || GITHUB_ACTIONS || NETLIFY || IS_EDGEONE)
+// `nuxt generate` 只产出静态文件，没有 Nitro 服务端
+// eslint-disable-next-line node/prefer-global/process -- 需要读取 CLI 参数，此配置仅运行于 Node 构建期
+const prerenderOnly = process.argv.includes('generate')
+
 // 此处配置无需修改
 export default defineNuxtConfig({
 	app: {
@@ -70,9 +78,10 @@ export default defineNuxtConfig({
 		prerender: {
 			// 修复部分平台会在文章路径后添加 `/`，导致闪现 404 错误
 			// https://github.com/nuxt/content/issues/2378
-			autoSubfolderIndex: CLOUDFLARE_PAGES || GITHUB_ACTIONS || NETLIFY ? false : undefined,
+			autoSubfolderIndex: USE_FLAT_ROUTES ? false : undefined,
+			// 依赖内容查询的页面统一由下方 routeRules 的 prerender 声明，
+			// 此处仅保留链接抓取，使文章页能沿首页链接被预渲染
 			crawlLinks: true,
-			routes: ['/', '/about', '/archive', '/essays', '/link'],
 		},
 	},
 
@@ -83,8 +92,11 @@ export default defineNuxtConfig({
 				acc![from] = { redirect: { to, statusCode: 308 } }
 				return acc
 			}, {}),
+		// 依赖内容查询的页面必须预渲染：Cloudflare Pages 等平台在未绑定 D1 时
+		// 运行时查询会 500，预渲染则走构建期本地 sqlite，无需 D1
 		'/': { prerender: true },
 		'/about': { prerender: true },
+		// 后台必须走服务端：纯静态部署（pnpm generate）下这两条路由会整体失效
 		'/admin': { prerender: false },
 		'/api/admin/**': { prerender: false },
 		'/api/stats': { prerender: true, headers: { 'Content-Type': 'application/json' } },
@@ -93,6 +105,7 @@ export default defineNuxtConfig({
 		'/essays': { prerender: true },
 		'/favicon.ico': { redirect: { to: blogConfig.favicon } },
 		'/link': { prerender: true },
+		'/preview': { prerender: true },
 		'/zhilu.opml': { prerender: true, headers: { 'Content-Type': 'application/xml' } },
 	},
 
@@ -132,7 +145,9 @@ export default defineNuxtConfig({
 			// __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'true',
 		},
 		server: {
-			allowedHosts: true,
+			// 开发服务器仅监听本机；此前允许任意 Host 会使 DNS rebinding 能访问本地
+			// dev server 上的 /api/admin/**（携带真实凭据）
+			allowedHosts: ['localhost', '127.0.0.1', '[::1]'],
 		},
 	},
 
@@ -157,7 +172,7 @@ export default defineNuxtConfig({
 	},
 
 	content: {
-		
+
 		build: {
 			markdown: {
 				highlight: false,
@@ -179,14 +194,18 @@ export default defineNuxtConfig({
 		},
 	},
 
+	// @keep-sorted
 	hooks: {
-		'ready': () => {
-			console.info(`
+		'build:before': () => {
+			// 纯静态部署（nuxt generate）没有 Nitro 服务端，后台与相关接口无法工作
+			if (prerenderOnly) {
+				console.warn(`
 ================================
-${pascal(packageJson.name)} ${packageJson.version}
-${packageJson.homepage}
+当前为纯静态构建（prerender 输出），/admin 后台与 /api/admin/** 不可用。
+如需使用后台，请改用 \`pnpm build\` 并保留 Nuxt 服务端。
 ================================
 `)
+			}
 		},
 		'content:file:afterParse': (ctx) => {
 			const permalink = ctx.content.permalink as string
@@ -199,6 +218,14 @@ ${packageJson.homepage}
 				const realPath = ctx.content.path as string | undefined
 				ctx.content.path = realPath?.replace(/^\/posts/, '')
 			}
+		},
+		'ready': () => {
+			console.info(`
+================================
+${pascal(packageJson.name)} ${packageJson.version}
+${packageJson.homepage}
+================================
+`)
 		},
 	},
 
