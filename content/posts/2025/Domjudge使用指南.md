@@ -593,7 +593,7 @@ set "ICPC_FONT_NAME=Microsoft YaHei"
 如果是想要让滚榜没这么自动，可以把使用award.bat设置多一点奖项，让大部分名字都能念得到。
 ### linux环境下  
 如果是linux环境，可以查看
-[scandi的博客](www.baidu.com)
+[scandi的博客](https://www.baidu.com)
 
 哦对了，如果这两个bat打不开，大概率是因为没有java环境，这里我就不赘述怎么配置环境了，自己上网搜索即可
 
