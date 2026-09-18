@@ -10,8 +10,10 @@ const categoryColor = computed(() => getCategoryColor(categoryLabel.value))
 const categoryIcon = computed(() => getCategoryIcon(categoryLabel.value))
 
 /**
- * 未配置封面的文章此前会留出整块空白，这里按标题哈希生成稳定的渐变封面。
- * 使用分类色作为基准色，使同一分类的文章视觉上成组；无分类时退回主题色。
+ * 未配置封面的文章此前会留出整块空白，这里生成一个克制的渐变封面。
+ *
+ * 色相取自分类色本身（而不是随机哈希），使同一分类的文章颜色一致、
+ * 不同分类之间才产生区别；标题哈希只用来微调渐变角度，避免每张完全雷同。
  */
 const generatedCover = computed(() => {
 	if (props.image)
@@ -23,11 +25,12 @@ const generatedCover = computed(() => {
 		hash = (hash * 31 + seed.charCodeAt(index)) % 360
 	}
 
-	const base = categoryColor.value || 'var(--c-primary)'
+	// 分类色形如 hsl(215deg 58% 62%)，取出其色相用于封面，保证与分类芯片同色
+	const hue = categoryColor.value?.match(/hsl\(\s*([\d.]+)deg/)?.[1]
+
 	return {
 		'--cover-angle': `${hash}deg`,
-		'--cover-hue': `${hash}deg`,
-		'--cover-base': base,
+		'--cover-hue': hue ? `${hue}deg` : 'var(--hue-theme)',
 	}
 })
 </script>
@@ -190,25 +193,16 @@ const generatedCover = computed(() => {
 		opacity: 1;
 	}
 
-	// 生成封面：同一分类共享色相，按标题哈希错开角度，避免每张都长一样
+	// 生成封面：使用分类色但保持克制——单向淡渐变 + 单点柔光，
+	// 不再叠加多重光斑、条纹与高饱和色，避免整屏出现杂乱的红绿紫色块
 	&.generated {
 		background-image:
-			radial-gradient(circle at 22% 18%, hsl(var(--cover-hue) 90% 72% / 55%), transparent 58%),
-			radial-gradient(circle at 78% 82%, hsl(calc(var(--cover-hue) + 48deg) 85% 62% / 45%), transparent 55%),
-			linear-gradient(var(--cover-angle), hsl(var(--cover-hue) 70% 58% / 85%), hsl(calc(var(--cover-hue) + 70deg) 65% 52% / 70%));
-
-		&::after {
-			content: "";
-			position: absolute;
-			inset: 0;
-			background-image:
-				repeating-linear-gradient(
-					calc(var(--cover-angle) + 45deg),
-					#FFF1 0 1px,
-					transparent 1px 9px
-				);
-			mix-blend-mode: overlay;
-		}
+			radial-gradient(115% 95% at 100% 0%, hsl(var(--cover-hue) 48% 62% / 30%), transparent 64%),
+			linear-gradient(
+				calc(var(--cover-angle) * 0.15 + 165deg),
+				hsl(var(--cover-hue) 42% 58% / 24%),
+				hsl(var(--cover-hue) 36% 52% / 8%)
+			);
 	}
 
 	& + article {

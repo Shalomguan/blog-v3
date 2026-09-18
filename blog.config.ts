@@ -37,16 +37,18 @@ const blogConfig = {
 
 	article: {
 		/** 分类配色与图标；未在此声明的分类会按名称生成稳定的兜底颜色 */
+		// 色相仍分散以保留辨识度，但统一压低饱和度与明度，
+		// 避免多个分类并排时出现刺眼的红绿紫色块
 		categories: {
 			[basicConfig.defaultCategory]: { icon: 'ph:folder-dotted-bold' },
-			acm: { icon: 'ph:trophy-bold', color: '#5b8def' },
-			fullstackopen: { icon: 'ph:graduation-cap-bold', color: '#2fb3a8' },
-			obsidian: { icon: 'ph:notebook-bold', color: '#9b7ede' },
-			教程: { icon: 'ph:book-open-bold', color: '#f0932b' },
-			经验分享: { icon: 'ph:mouse-bold', color: '#3af' },
-			杂谈: { icon: 'ph:chat-bold', color: '#3ba' },
-			生活: { icon: 'ph:shooting-star-bold', color: '#f77' },
-			代码: { icon: 'ph:code-bold', color: '#77f' },
+			acm: { icon: 'ph:trophy-bold', color: 'hsl(215deg 58% 62%)' },
+			fullstackopen: { icon: 'ph:graduation-cap-bold', color: 'hsl(178deg 40% 52%)' },
+			obsidian: { icon: 'ph:notebook-bold', color: 'hsl(258deg 44% 68%)' },
+			教程: { icon: 'ph:book-open-bold', color: 'hsl(28deg 52% 62%)' },
+			经验分享: { icon: 'ph:mouse-bold', color: 'hsl(205deg 55% 62%)' },
+			杂谈: { icon: 'ph:chat-bold', color: 'hsl(158deg 38% 54%)' },
+			生活: { icon: 'ph:shooting-star-bold', color: 'hsl(352deg 48% 68%)' },
+			代码: { icon: 'ph:code-bold', color: 'hsl(232deg 50% 68%)' },
 		},
 		defaultCategoryIcon: 'ph:folder-bold',
 		/** 文章版式，首个为默认版式 */

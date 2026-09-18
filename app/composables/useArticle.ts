@@ -111,8 +111,8 @@ export function getCategoryColor(category?: string) {
 	for (let index = 0; index < category.length; index++) {
 		hash = (hash * 31 + category.charCodeAt(index)) % 360
 	}
-	// 固定饱和度与明度，保证浅色/深色主题下都有足够对比度
-	return `hsl(${hash}deg 62% 58%)`
+	// 与 blog.config 中手工配色保持同一强度区间，避免兜底色比显式配置更刺眼
+	return `hsl(${hash}deg 46% 60%)`
 }
 
 interface GetPostTypeClassNameOptions {
