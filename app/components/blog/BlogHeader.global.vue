@@ -107,11 +107,14 @@ const appConfig = useAppConfig()
 	align-content: center;
 	justify-items: center;
 	position: absolute;
-	opacity: 0.2;
+	opacity: 0.12;
 	inset: 0;
-	font-size: 4rem;
+	font-size: 3.5rem;
 	transition: opacity 1s;
-	filter: blur(2px);
+
+	// emoji 自带彩色，五个叠在一起会糊成互不相干的红黄绿蓝（尤其在浅色背景上）。
+	// 这里只做去色，颜色交给不透明度控制，行为可预测且深浅色主题都适用
+	filter: grayscale(1) blur(2px);
 	pointer-events: none;
 	z-index: -2;
 
@@ -124,7 +127,7 @@ const appConfig = useAppConfig()
 
 .blog-header:hover {
 	.emoji-tail {
-		opacity: 0.5;
+		opacity: 0.28;
 	}
 
 	.split-char {
