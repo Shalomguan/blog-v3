@@ -127,22 +127,22 @@ const replyContent = computed(() => props.talk.description || props.talk.title |
 }
 
 .date {
-	color: var(--c-text-3);
 	font-family: var(--font-monospace);
 	font-size: 0.8rem;
+	color: var(--c-text-3);
 }
 
 .verified {
-	color: var(--c-primary);
 	font-size: 16px;
+	color: var(--c-primary);
 }
 
 .talk-content {
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;
-	color: var(--c-text-2);
 	line-height: 1.6;
+	color: var(--c-text-2);
 }
 
 .talk-markdown {
@@ -217,8 +217,8 @@ const replyContent = computed(() => props.talk.description || props.talk.title |
 		position: absolute;
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
 		transition: transform 0.3s;
+		object-fit: cover;
 
 		&:hover {
 			transform: scale(1.05);
@@ -252,14 +252,15 @@ const replyContent = computed(() => props.talk.description || props.talk.title |
 	padding: 2px 4px;
 	border-radius: 4px;
 	background-color: var(--c-bg-2);
-	cursor: pointer;
 	transition: all 0.2s;
+	cursor: pointer;
 
 	&:hover {
 		opacity: 0.8;
 	}
 }
 
+/* stylelint-disable-next-line selector-class-pattern -- Iconify 生成的类名含冒号，无法改为 kebab-case */
 .tag .i-ph\:tag-bold + * {
 	margin-left: 0.15em;
 }

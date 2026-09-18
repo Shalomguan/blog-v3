@@ -91,6 +91,30 @@ export function getCategoryIcon(category?: string) {
 	return appConfig.article.categories[category!]?.icon ?? 'ph:folder-bold'
 }
 
+/**
+ * 分类兜底配色。
+ *
+ * 未在 blog.config 的 article.categories 中声明的分类（新增分类时容易忘记补配置）
+ * 此前会拿到 undefined 而全部显示为灰色，这里按名称哈希生成稳定色相，
+ * 保证任何分类都有可区分、且每次渲染一致的颜色。
+ */
+export function getCategoryColor(category?: string) {
+	if (!category)
+		return undefined
+
+	const appConfig = useAppConfig()
+	const configured = appConfig.article.categories[category]?.color
+	if (configured)
+		return configured
+
+	let hash = 0
+	for (let index = 0; index < category.length; index++) {
+		hash = (hash * 31 + category.charCodeAt(index)) % 360
+	}
+	// 固定饱和度与明度，保证浅色/深色主题下都有足够对比度
+	return `hsl(${hash}deg 62% 58%)`
+}
+
 interface GetPostTypeClassNameOptions {
 	prefix?: string
 }

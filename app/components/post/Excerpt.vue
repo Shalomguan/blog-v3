@@ -68,8 +68,8 @@ if (import.meta.dev) {
 }
 
 .excerpt-body {
-	position: relative;
 	display: inline;
+	position: relative;
 }
 
 // 不可见但参与布局，负责固定容器高度

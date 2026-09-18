@@ -36,8 +36,13 @@ const blogConfig = {
 	...basicConfig,
 
 	article: {
+		/** 分类配色与图标；未在此声明的分类会按名称生成稳定的兜底颜色 */
 		categories: {
 			[basicConfig.defaultCategory]: { icon: 'ph:folder-dotted-bold' },
+			acm: { icon: 'ph:trophy-bold', color: '#5b8def' },
+			fullstackopen: { icon: 'ph:graduation-cap-bold', color: '#2fb3a8' },
+			obsidian: { icon: 'ph:notebook-bold', color: '#9b7ede' },
+			教程: { icon: 'ph:book-open-bold', color: '#f0932b' },
 			经验分享: { icon: 'ph:mouse-bold', color: '#3af' },
 			杂谈: { icon: 'ph:chat-bold', color: '#3ba' },
 			生活: { icon: 'ph:shooting-star-bold', color: '#f77' },

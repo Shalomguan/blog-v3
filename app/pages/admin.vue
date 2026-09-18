@@ -601,8 +601,8 @@ async function saveContent(): Promise<void> {
 .admin-shell {
 	display: grid;
 	grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-	min-height: 72vh;
 	overflow: hidden;
+	min-height: 72vh;
 }
 
 .content-list {
@@ -627,9 +627,9 @@ async function saveContent(): Promise<void> {
 		color: var(--c-text-2);
 
 		&.active {
+			box-shadow: 0 1px 0.4rem var(--ld-shadow);
 			background-color: var(--ld-bg-card);
 			color: var(--c-text);
-			box-shadow: 0 1px 0.4rem var(--ld-shadow);
 		}
 	}
 }
@@ -702,8 +702,8 @@ async function saveContent(): Promise<void> {
 
 	span {
 		overflow: hidden;
-		text-overflow: ellipsis;
 		white-space: nowrap;
+		text-overflow: ellipsis;
 		color: var(--c-text);
 	}
 
@@ -711,8 +711,8 @@ async function saveContent(): Promise<void> {
 		overflow: hidden;
 		font-family: var(--font-monospace);
 		font-size: 0.7rem;
-		text-overflow: ellipsis;
 		white-space: nowrap;
+		text-overflow: ellipsis;
 		color: var(--c-text-3);
 	}
 
@@ -785,15 +785,15 @@ textarea {
 
 .markdown-editor,
 .markdown-preview {
+	overflow: auto;
 	min-height: 24rem;
 	max-height: 72vh;
-	overflow: auto;
 }
 
 .markdown-editor {
-	resize: vertical;
 	font-family: var(--font-monospace);
 	line-height: 1.6;
+	resize: vertical;
 }
 
 .markdown-preview {
@@ -823,7 +823,7 @@ textarea {
 
 .error-message {
 	background-color: var(--c-danger-soft, var(--c-bg-2));
-	color: var(--c-danger, #d33);
+	color: var(--c-danger, #D33);
 }
 
 @media (max-width: $breakpoint-mobile) {
@@ -843,8 +843,8 @@ textarea {
 	.admin-header,
 	.editor-toolbar,
 	.toolbar-actions {
-		align-items: stretch;
 		flex-direction: column;
+		align-items: stretch;
 	}
 }
 </style>

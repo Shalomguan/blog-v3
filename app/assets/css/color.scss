@@ -25,22 +25,26 @@
 	--c-text: hsl(var(--hue-theme) 0% 0%);
 	--c-text-1: hsl(var(--hue-theme) 0% 20%);
 	--c-text-2: hsl(var(--hue-theme) 0% 40%);
-	--c-text-3: hsl(var(--hue-theme) 0% 70%);
+	--c-text-3: hsl(var(--hue-theme) 0% 62%);
 	--c-bg: hsl(var(--hue-theme) 0% 100%);
-	--c-bg-1: hsl(var(--hue-theme) 20% 98%);
-	--c-bg-2: hsl(var(--hue-theme) 10% 95%);
-	--c-bg-3: hsl(var(--hue-theme) 10% 92%);
-	--c-bg-soft: hsl(var(--hue-theme) 20% 20% / 10%);
-	--c-border: hsl(var(--hue-theme) 10% 91%);
-	--c-bg-a50: hsl(var(--hue-theme) 20% 98% / 50%);
-	--c-bg-a80: hsl(var(--hue-theme) 20% 98% / 80%);
+
+	// 页面底色与卡片白之间拉开层次，卡片才能从背景中浮起来
+	--c-bg-1: hsl(var(--hue-theme) 24% 97%);
+	--c-bg-2: hsl(var(--hue-theme) 18% 94%);
+	--c-bg-3: hsl(var(--hue-theme) 16% 91%);
+	--c-bg-soft: hsl(var(--hue-theme) 24% 20% / 8%);
+	--c-border: hsl(var(--hue-theme) 14% 90%);
+	--c-bg-a50: hsl(var(--hue-theme) 24% 97% / 50%);
+	--c-bg-a80: hsl(var(--hue-theme) 24% 97% / 85%);
 	--c-primary: hsl(var(--hue-theme) 100% 55%);
 	--c-primary-soft: hsl(var(--hue-theme) 100% 60% / 15%);
 	--c-accent: hsl(180deg 70% 60%);
 	--ld-bg-blur: var(--c-bg-1);
 	--ld-bg-card: var(--c-bg);
 	--ld-bg-active: var(--c-bg);
-	--ld-shadow: var(--c-bg-soft);
+
+	// 阴影带一点主题色，比纯灰阴影更自然
+	--ld-shadow: hsl(var(--hue-theme) 30% 45% / 10%);
 
 	color-scheme: light dark;
 }

@@ -43,7 +43,13 @@ function toggleDirection() {
 				<span>全部分类</span>
 			</button>
 
-			<button v-for="item in categories" :key="item" :class="{ active: item === category }" @click="hide(), category = item">
+			<button
+				v-for="item in categories"
+				:key="item"
+				:class="{ active: item === category }"
+				:style="{ '--cg-color': getCategoryColor(item) }"
+				@click="hide(), category = item"
+			>
 				<Icon :name="getCategoryIcon(item)" />
 				<span>{{ item }}</span>
 			</button>
@@ -72,6 +78,12 @@ function toggleDirection() {
 	button {
 		color: var(--c-text-2);
 		transition: color 0.2s;
+
+		// 下拉中的分类项用分类色标识，与文章卡片上的分类芯片呼应
+		// （tippy 会把内容插入到 [data-tippy-root]，需要穿透作用域）
+		:deep() ~ [data-tippy-root] & {
+			color: var(--cg-color, var(--c-text-1));
+		}
 
 		&:hover {
 			color: var(--c-primary);

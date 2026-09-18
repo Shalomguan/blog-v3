@@ -288,8 +288,8 @@ const hobbies = [
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
-	color: var(--c-text-1);
 	padding: 1.5rem;
+	color: var(--c-text-1);
 
 	.motto-content {
 		display: flex;
@@ -300,12 +300,12 @@ const hobbies = [
 	}
 
 	.motto-text {
+		position: relative;
 		margin: 0;
 		font-size: 2.2rem;
 		font-weight: bold;
 		line-height: 1.3;
 		text-align: center;
-		position: relative;
 		z-index: 1;
 	}
 
@@ -313,8 +313,8 @@ const hobbies = [
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-top: 1.5rem;
 		width: 100%;
+		margin-top: 1.5rem;
 	}
 
 	.decoration-line {
@@ -326,9 +326,9 @@ const hobbies = [
 	.decoration-dot {
 		width: 12px;
 		height: 12px;
+		margin: 0 10px;
 		border-radius: 50%;
 		background-color: var(--c-primary);
-		margin: 0 10px;
 	}
 }
 
@@ -336,8 +336,8 @@ const hobbies = [
 	display: flex;
 	flex-direction: column;
 	min-height: 250px;
-	color: var(--c-text-1);
 	padding: 1.5rem;
+	color: var(--c-text-1);
 
 	.tech-content {
 		display: flex;
@@ -349,9 +349,9 @@ const hobbies = [
 	}
 
 	h3 {
+		margin-bottom: 1.5rem;
 		font-size: 2rem;
 		font-weight: bold;
-		margin-bottom: 1.5rem;
 		text-align: center;
 	}
 
@@ -377,9 +377,9 @@ const hobbies = [
 	align-items: center;
 	justify-content: center;
 	min-height: 250px;
+	padding: 1.5rem;
 	text-shadow: none;
 	color: var(--c-text-1);
-	padding: 1.5rem;
 
 	.music-content {
 		display: flex;
@@ -391,9 +391,9 @@ const hobbies = [
 	}
 
 	h3 {
+		margin-bottom: 1rem;
 		font-size: 2rem;
 		font-weight: bold;
-		margin-bottom: 1rem;
 		text-align: center;
 	}
 
@@ -412,15 +412,15 @@ const hobbies = [
 		align-items: center;
 		justify-content: center;
 		gap: 4px;
-		margin-top: 1rem;
 		height: 30px;
+		margin-top: 1rem;
 	}
 
 	.wave-bar {
 		width: 4px;
 		height: 100%;
-		background-color: var(--c-primary);
 		border-radius: 2px;
+		background-color: var(--c-primary);
 		animation: wave 1.2s ease-in-out infinite alternate;
 
 		&:nth-child(1) {
@@ -446,7 +446,6 @@ const hobbies = [
 }
 
 @keyframes bounce {
-
 	0%,
 	100% {
 		transform: translateY(0);
@@ -495,8 +494,8 @@ const hobbies = [
 
 .skills-card {
 	grid-column: 1 / -1;
-	color: var(--c-text-1);
 	padding: 2rem 1.5rem;
+	color: var(--c-text-1);
 }
 
 .skills-content {
@@ -522,17 +521,17 @@ const hobbies = [
 
 .skill-bar {
 	flex: 1;
+	overflow: hidden;
 	height: 10px;
 	margin: 0 15px;
-	background-color: var(--c-border);
 	border-radius: 5px;
-	overflow: hidden;
+	background-color: var(--c-border);
 }
 
 .skill-level {
 	height: 100%;
-	background-color: var(--c-primary);
 	border-radius: 5px;
+	background-color: var(--c-primary);
 	transition: width 1s ease-in-out;
 }
 
@@ -545,8 +544,8 @@ const hobbies = [
 
 .hobbies-card {
 	grid-column: 1 / -1;
-	color: var(--c-text-1);
 	padding: 2rem 1.5rem;
+	color: var(--c-text-1);
 }
 
 .hobbies-content {
@@ -570,8 +569,8 @@ const hobbies = [
 }
 
 .hobby-icon {
-	font-size: 2.5rem;
 	margin-bottom: 0.5rem;
+	font-size: 2.5rem;
 	color: var(--c-primary);
 
 	@media (max-width: 768px) {
@@ -767,12 +766,12 @@ const hobbies = [
 	}
 
 	.motto-text {
-		text-shadow: 0 0 10px rgba(102, 170, 255, 0.3);
+		text-shadow: 0 0 10px rgb(102 170 255 / 30%);
 	}
 
 	.decoration-dot {
-		background-color: var(--c-primary-dark);
 		box-shadow: 0 0 8px var(--c-primary-dark);
+		background-color: var(--c-primary-dark);
 	}
 
 	.decoration-line {

@@ -151,9 +151,9 @@ async function replyTalk(content: string): Promise<void> {
 .talk-empty,
 .talk-footer {
 	margin: 2rem 0;
-	color: var(--c-text-3);
 	font-size: 1rem;
 	text-align: center;
+	color: var(--c-text-3);
 }
 
 .load-more,
@@ -163,8 +163,8 @@ async function replyTalk(content: string): Promise<void> {
 	padding: 0.55rem 1rem;
 	border-radius: 999px;
 	background-color: var(--c-bg-2);
-	color: var(--c-text-2);
 	font-size: 0.9rem;
+	color: var(--c-text-2);
 	transition: background-color 0.2s, color 0.2s;
 
 	&:hover {

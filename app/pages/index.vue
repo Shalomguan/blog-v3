@@ -108,7 +108,7 @@ const listRecommended = computed(() => sort(
 
 .post-empty {
 	margin: 20vh 0;
-	color: var(--c-text-3);
 	text-align: center;
+	color: var(--c-text-3);
 }
 </style>
